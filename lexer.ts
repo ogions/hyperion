@@ -4,11 +4,18 @@ import { Tokenizer } from "./tokenizer";
 export class LexerOptions {
 
     isInDialogue: boolean;
+    isInTitlePage: boolean;
     nextLineIsBlank: boolean;
     previousLineIsBlank: boolean;
 
-    constructor(isInDialogue: boolean, nextLineIsBlank: boolean, previousLineIsBlank: boolean) {
+    constructor(
+        isInDialogue: boolean,
+        isInTitlePage: boolean,
+        nextLineIsBlank: boolean,
+        previousLineIsBlank: boolean
+    ) {
         this.isInDialogue = isInDialogue;
+        this.isInTitlePage = isInTitlePage;
         this.nextLineIsBlank = nextLineIsBlank;
         this.previousLineIsBlank = previousLineIsBlank;
     }
@@ -18,6 +25,7 @@ export class Lexer {
 
     // Block-level flags
     isInDialogue = false;
+    isInTitlePage = true;
     nextLineIsBlank = true;
     previousLineIsBlank = true;
 
@@ -30,8 +38,9 @@ export class Lexer {
 
     lex(chunk: string, options: LexerOptions): Token[] {
 
-        this.previousLineIsBlank = options.previousLineIsBlank;
         this.isInDialogue = options.isInDialogue;
+        this.isInTitlePage = options.isInTitlePage;
+        this.previousLineIsBlank = options.previousLineIsBlank;
 
         const lines = chunk.split("\n");
         const tokens = [];
@@ -50,6 +59,7 @@ export class Lexer {
                 token.type === TokenType.PageBreak) {
                 this.previousLineIsBlank = true;
                 this.isInDialogue = false;
+                this.isInTitlePage = false;
             } else if (token.type === TokenType.Character) {
                 this.isInDialogue = true;
                 this.previousLineIsBlank = false;

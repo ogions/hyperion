@@ -1,10 +1,10 @@
 export class Document {
     titlePage: Map<string, string>;
-    body: Block[];
+    blocks: Block[];
 
-    constructor(titlePage: Map<string, string>, body: Block[]) {
+    constructor(titlePage: Map<string, string>, blocks: Block[]) {
         this.titlePage = titlePage;
-        this.body = body;
+        this.blocks = blocks;
     }
 }
 
@@ -29,7 +29,8 @@ export enum BlockType {
     Transition,
     PageBreak,
     SectionHeading,
-    Synopsis
+    Synopsis,
+    TitlePage
 }
 
 export class Run {
@@ -49,5 +50,6 @@ export enum RunStyle {
     Underline,
     Boneyard,
     Note,
-    Special
+    Special,
+    TitlePage
 }

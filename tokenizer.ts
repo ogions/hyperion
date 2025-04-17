@@ -16,6 +16,74 @@ export class Tokenizer {
          * Official Spec: https://fountain.io/syntax/
          * Github Repo: https://github.com/nyousefi/Fountain/
          */
+        
+        /*
+         * The optional Title Page is always the first thing in a Fountain document.
+         * Information is encoding in the format key: value. Keys can have spaces
+         * (e. g. "Draft date"), but must end with a colon.
+         *
+         * Values can be inline with the key or they can be indented on a newline
+         * below the key. Indenting is 3 or more spaces, or a tab. The indenting
+         * pattern allows multiple values for the same key (multiple authors,
+         * multiple address lines).
+         */
+        if (lexer.isInTitlePage) {
+            if (this.regexes.titlePageKey.test(line)) {
+                const matches = this.regexes.titlePageKey.exec(line);
+                const key = matches ? matches[1] : "";
+                const space = matches ? matches[2] : "";
+                const value = matches ? matches[3] : "";
+
+                const tokens = [
+                    new Token(
+                        TokenType.TitlePageKey,
+                        key
+                    ),
+                    new Token (
+                        TokenType.Text,
+                        space
+                    )
+                ];
+
+                if (value) {
+                    tokens.push(new Token(
+                        TokenType.TitlePageValue,
+                        value
+                    ));
+                }
+
+                return new Token(
+                    TokenType.TitlePage,
+                    tokens
+                );
+            } else {
+                const matches = this.regexes.titlePageIndentedValue.exec(line);
+                if (matches) {
+                    const space = matches[1];
+                    const value = matches[2];
+
+                    const tokens = [
+                        new Token(
+                            TokenType.Text,
+                            space
+                        ),
+                        new Token(
+                            TokenType.TitlePageValue,
+                            value
+                        )
+                    ];
+
+                    return new Token(
+                        TokenType.TitlePage,
+                        tokens
+                    );
+                }
+            }
+            return new Token(
+                TokenType.TitlePage,
+                lexer.lexLine(line)
+            );
+        }
 
         // Blank line
         if (!line) {
@@ -85,6 +153,7 @@ export class Tokenizer {
                         "<"
                     )
                 ];
+                console.log("centered line")
                 return new Token(
                     TokenType.Action,
                     tokens
@@ -339,7 +408,7 @@ export class Tokenizer {
                 "*/"
             );
         }
-        if (char === "[" && lexer.nextChar === "]") {
+        if (char === "[" && lexer.nextChar === "[") {
             return new Token(
                 TokenType.NoteOpen,
                 "[["
