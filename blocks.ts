@@ -53,3 +53,21 @@ export enum RunStyle {
     Special,
     TitlePage
 }
+
+export class Multiline {
+    type: MultilineType;
+    start?: number;
+    end?: number;
+
+    constructor(type: MultilineType, start?: number, end?: number) {
+        this.type = type;
+        if (start) this.start = start;
+        if (end) this.end = end;
+    }
+}
+
+export enum MultilineType {
+    Boneyard,
+    Note,
+    TitlePage
+}
