@@ -2,7 +2,7 @@
   "name": "fairfax",
   "version": "1.0.0",
   "description": "A continuous, Typescript-based parser for the Fountain markup language.",
-  "main": "fairfax.ts",
+  "main": "src/fairfax.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
