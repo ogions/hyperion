@@ -89,6 +89,7 @@ export class Parser {
         for (let [i, token] of tokens.entries()) {
             const blockType = this.typeMap.get(token.type) ?? BlockType.Action;
 
+
             // Safeguard in case the token doesn't contain any inner tokens
             const runs: Run[] = typeof token.content === "object" ?
                 this.parseInnerTokens(token.content, titlePage, blocks, i) :
@@ -119,6 +120,15 @@ export class Parser {
         }
         this.openMultilines.clear();
         this.openMultilineStarts.clear();
+
+        /* If there are any open title page items left when we finish parsing,
+         * we add them to the title page and close the open items.
+         */
+        if (this.openKey) {
+            titlePage.set(this.openKey, this.openValue.join("\n"));
+            this.openKey = "";
+            this.openValue = [];
+        }
 
         for (let block of blocks) {
             this.collapseRuns(block);
