@@ -1,10 +1,16 @@
 export class Document {
     titlePage: Map<string, string>;
     blocks: Block[];
+    multilines: MultilineStructure[];
 
-    constructor(titlePage: Map<string, string>, blocks: Block[]) {
+    constructor(
+        titlePage: Map<string, string>,
+        blocks: Block[],
+        multilines: MultilineStructure[]
+    ) {
         this.titlePage = titlePage;
         this.blocks = blocks;
+        this.multilines = multilines;
     }
 }
 
@@ -54,20 +60,19 @@ export enum RunStyle {
     TitlePage
 }
 
-export class Multiline {
+export enum MultilineType {
+    Boneyard,
+    Note
+}
+
+export class MultilineStructure {
     type: MultilineType;
-    start?: number;
-    end?: number;
+    start: number | undefined;
+    end: number | undefined;
 
     constructor(type: MultilineType, start?: number, end?: number) {
         this.type = type;
-        if (start) this.start = start;
-        if (end) this.end = end;
+        this.start = start;
+        this.end = end;
     }
-}
-
-export enum MultilineType {
-    Boneyard,
-    Note,
-    TitlePage
 }

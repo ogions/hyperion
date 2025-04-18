@@ -64,26 +64,23 @@ export class Stylizer {
 
     handleStyle(token: Token, runs: Run[], tokenIndex: number): Set<RunStyle> {
 
+        const style = this.styleMap.get(token.type);
+        if (typeof style === "undefined") return new Set();
+
         /* Check if the token closes an open style. We need to make sure that
          * the token is a potential closer and that the style it closes has
          * already been opened.
          */
-        if (this.closerTokens.has(token.type)) {
-            const style = this.styleMap.get(token.type);
-            if (typeof style !== "undefined" &&
-                this.openStyles.has(style)) {
-
-                this.closeStyle(style, runs, tokenIndex);
-                return new Set([RunStyle.Special]);
-            }
+        if (this.closerTokens.has(token.type) &&
+            this.openStyles.has(style)) {
+            
+            this.closeStyle(style, runs, tokenIndex);
+            return new Set([RunStyle.Special]);
         }
 
         // Otherwise, as long as the token is an opener, we open a new style.
         if (this.openerTokens.has(token.type)) {
-            const style = this.styleMap.get(token.type);
-            if (typeof style !== "undefined") {
-                this.openStyle(style, tokenIndex);
-            }
+            this.openStyle(style, tokenIndex);
         }
 
         /* Open tokens are not given a special style, since we don't yet know if

@@ -17,6 +17,14 @@ export class Tokenizer {
          * Github Repo: https://github.com/nyousefi/Fountain/
          */
         
+        // Blank line
+        if (!line) {
+            return new Token(
+                TokenType.BlankLine,
+                line
+            );
+        }
+
         /*
          * The optional Title Page is always the first thing in a Fountain document.
          * Information is encoding in the format key: value. Keys can have spaces
@@ -82,14 +90,6 @@ export class Tokenizer {
             return new Token(
                 TokenType.TitlePage,
                 lexer.lexLine(line)
-            );
-        }
-
-        // Blank line
-        if (!line) {
-            return new Token(
-                TokenType.BlankLine,
-                line
             );
         }
 
