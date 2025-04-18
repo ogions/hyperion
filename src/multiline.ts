@@ -1,6 +1,27 @@
-import { Block, Run, RunStyle, MultilineStructure, MultilineType } from "./blocks";
+import { Block, Run, RunStyle } from "./blocks";
 import { Token, TokenType } from "./tokens";
 
+export class MultilineStructure {
+    type: MultilineType;
+    startLine: number | undefined;
+    startToken: number | undefined;
+    endLine: number | undefined;
+    endToken: number | undefined;
+
+    constructor(type: MultilineType, start?: number, startToken?: number, endLine?: number, endToken?: number) {
+        this.type = type;
+        this.startLine = start;
+        this.startToken = startToken;
+        this.endLine = endLine;
+        this.endToken = endToken;
+    }
+}
+
+export enum MultilineType {
+    Boneyard,
+    Note,
+    TitlePage
+}
 
 export class MultilineManager {
 
@@ -22,6 +43,7 @@ export class MultilineManager {
     ]);
     openMultilines: MultilineStructure[] = [];
     activeMultilines: Set<MultilineStructure> = new Set();
+    hasOpenTitlePage = false;
 
     reset() {
         this.openMultilines = [];
@@ -96,7 +118,6 @@ export class MultilineManager {
         tokenIndex: number
     ) {
         const style = this.multilineStyles.get(multiline.type);
-        console.log("Closing multiline");
         const startLineIndex = (typeof multiline.startLine === "undefined") ? lineIndex : multiline.startLine;
         const tokenStartIndex = (typeof multiline.startToken === "undefined") ? tokenIndex : multiline.startToken;
         const endLineIndex = (typeof multiline.endLine === "undefined") ? lineIndex : multiline.endLine;
@@ -132,4 +153,22 @@ export class MultilineManager {
         this.openMultilines.splice(multilineIndex, 1);
         this.activeMultilines.add(multiline);
     }
+
+    openTitlePage() {
+        this.hasOpenTitlePage = true;
+        console.log("Title page open")
+    }
+
+    closeTitlePage(index: number) {
+        console.log("Titel page closed")
+        this.hasOpenTitlePage = false;
+        this.activeMultilines.add(new MultilineStructure(
+            MultilineType.TitlePage,
+            0,
+            undefined,
+            index + 1
+        ));
+    }
+
+
 }

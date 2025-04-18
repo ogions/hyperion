@@ -1,25 +1,25 @@
-import { Block, BlockType, Document, MultilineStructure, Run } from "./blocks";
+import { Block, BlockType, Document, Run } from "./blocks";
 import { Lexer, LexerOptions } from "./lexer";
 import { MultilineManager } from "./multiline";
 import { Stylizer } from "./stylizer";
 import { Token, TokenType } from "./tokens";
 
 export class ParserOptions {
+    isDocumentStart: boolean;
     isInDialogue: boolean;
-    isInTitlePage: boolean;
     nextLineIsBlank: boolean;
     previousLineIsBlank: boolean;
     includeMarkup: boolean;
 
     constructor(
+        isDocumentStart?: boolean,
         isInDialogue?: boolean,
-        isInTitlePage?: boolean,
         nextLineIsBlank?: boolean,
         previousLineIsBlank?: boolean,
         includeMarkup?: boolean
     ) {
+        this.isDocumentStart = isDocumentStart ?? false;
         this.isInDialogue = isInDialogue ?? false;
-        this.isInTitlePage = isInTitlePage ?? false;
         this.nextLineIsBlank = nextLineIsBlank ?? true;
         this.previousLineIsBlank = previousLineIsBlank ?? true;
         this.includeMarkup = includeMarkup ?? false;
@@ -50,12 +50,13 @@ export class Parser {
 
     parse(chunk: string, options: ParserOptions): Document {
         const lexerOptions = new LexerOptions(
+            options.isDocumentStart,
             options.isInDialogue,
-            options.isInTitlePage,
             options.nextLineIsBlank,
             options.previousLineIsBlank
         );
         const tokens = this.lexer.lex(chunk, lexerOptions);
+        console.log(tokens);
         const blocks = [];
         this.mlManager.reset();
         const titlePage = new Map();
@@ -75,6 +76,9 @@ export class Parser {
                 // Otherwise, we process title page tokens as key/value pairs
                 if (blockType === BlockType.TitlePage) {
                     this.parseTitlePageTokens(token.content, titlePage);
+                    this.mlManager.openTitlePage();
+                } else if (blockType === BlockType.BlankLine) {
+                    if (this.mlManager.hasOpenTitlePage) this.mlManager.closeTitlePage(i);
                 }
 
                 /* Then all tokens (including title page tokens) are parsed for
@@ -92,6 +96,9 @@ export class Parser {
             titlePage.set(this.openKey, this.openValue.join("\n"));
             this.openKey = "";
             this.openValue = [];
+        }
+        if (this.mlManager.hasOpenTitlePage) {
+            this.mlManager.closeTitlePage(blocks.length);
         }
 
         return new Document(

@@ -48,6 +48,14 @@ export class Stylizer {
             return new Set([RunStyle.Special]);
         }
 
+        if (token.type === TokenType.TitlePageKey) {
+            return new Set([RunStyle.TitlePageKey]);
+        }
+
+        if (token.type === TokenType.TitlePageValue) {
+            return new Set([RunStyle.TitlePageValue]);
+        }
+
         // Plain text can be returned without any styles.
         if (token.type === TokenType.Text) {
             return new Set();

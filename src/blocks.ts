@@ -60,26 +60,7 @@ export enum RunStyle {
     Boneyard,
     Note,
     Special,
-    TitlePage
+    TitlePageKey,
+    TitlePageValue
 }
 
-export class MultilineStructure {
-    type: MultilineType;
-    startLine: number | undefined;
-    startToken: number | undefined;
-    endLine: number | undefined;
-    endToken: number | undefined;
-
-    constructor(type: MultilineType, start?: number, startToken?: number, endLine?: number, endToken?: number) {
-        this.type = type;
-        this.startLine = start;
-        this.startToken = startToken;
-        this.endLine = endLine;
-        this.endToken = endToken;
-    }
-}
-
-export enum MultilineType {
-    Boneyard,
-    Note
-}

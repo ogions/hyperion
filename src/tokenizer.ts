@@ -35,6 +35,9 @@ export class Tokenizer {
          * pattern allows multiple values for the same key (multiple authors,
          * multiple address lines).
          */
+        if (lexer.isDocumentStart && this.regexes.titlePageKey.test(line)) {
+            lexer.isInTitlePage = true;
+        }
         if (lexer.isInTitlePage) {
             if (this.regexes.titlePageKey.test(line)) {
                 const matches = this.regexes.titlePageKey.exec(line);
