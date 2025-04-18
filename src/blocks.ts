@@ -60,11 +60,6 @@ export enum RunStyle {
     TitlePage
 }
 
-export enum MultilineType {
-    Boneyard,
-    Note
-}
-
 export class MultilineStructure {
     type: MultilineType;
     start: number | undefined;
@@ -75,4 +70,9 @@ export class MultilineStructure {
         this.start = start;
         this.end = end;
     }
+}
+
+export enum MultilineType {
+    Boneyard,
+    Note
 }

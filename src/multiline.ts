@@ -1,4 +1,4 @@
-import { Block, Run, RunStyle, MultilineType, MultilineStructure } from "./blocks";
+import { Block, Run, RunStyle, MultilineStructure, MultilineType } from "./blocks";
 import { Token, TokenType } from "./tokens";
 
 
