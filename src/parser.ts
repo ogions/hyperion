@@ -49,7 +49,6 @@ export class Parser {
     openValue: string[] = [];
 
     parse(chunk: string, options: ParserOptions): Document {
-
         const lexerOptions = new LexerOptions(
             options.isInDialogue,
             options.isInTitlePage,
@@ -58,6 +57,7 @@ export class Parser {
         );
         const tokens = this.lexer.lex(chunk, lexerOptions);
         const blocks = [];
+        this.mlManager.reset();
         const titlePage = new Map();
         for (let [i, token] of tokens.entries()) {
             const blockType = this.typeMap.get(token.type) ?? BlockType.Action;
@@ -94,19 +94,12 @@ export class Parser {
             this.openValue = [];
         }
 
-        /* If there are any open multiline structures (that don't have a
-         * beginning or end), then we track them as active structures
-         * document before resetting the manager.
-         */
-        for (let type of this.mlManager.openMultilines) {
-            const start = this.mlManager.openMultilineStarts.get(type);
-            const multiline = new MultilineStructure(type, start);
-            this.mlManager.activeMultilines.push(multiline);
-        }
-
-        this.mlManager.reset();
-
-        return new Document(titlePage, blocks, this.mlManager.activeMultilines);
+        return new Document(
+            titlePage,
+            blocks,
+            this.mlManager.activeMultilines,
+            this.mlManager.openMultilines
+        );
     }
 
     parseInnerTokens(tokens: Token[], blocks: Block[], lineIndex: number): Run[] {

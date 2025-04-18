@@ -20,13 +20,12 @@ export class MultilineManager {
         [TokenType.NoteOpen, MultilineType.Note],
         [TokenType.NoteClose, MultilineType.Note],
     ]);
-    openMultilines: Set<MultilineType> = new Set();
-    openMultilineStarts = new Map();
-    activeMultilines: MultilineStructure[] = [];
+    openMultilines: MultilineStructure[] = [];
+    activeMultilines: Set<MultilineStructure> = new Set();
 
     reset() {
-        this.openMultilines = new Set();
-        this.openMultilineStarts = new Map();
+        this.openMultilines = [];
+        this.activeMultilines = new Set();
     }
 
     manage(
@@ -39,10 +38,22 @@ export class MultilineManager {
         const type = this.multilineTypes.get(token.type);
         if (typeof type === "undefined") return;
 
-        if (this.isCloser(token) && this.openMultilines.has(type)) {
-            this.closeMultiline(type, blocks, runs, lineIndex, tokenIndex);
+        if (this.isCloser(token)) {
+            /* We look back over the stack of open multilines and close the
+             * first one with a matching type.
+             */
+            for (let i = this.openMultilines.length - 1; i >= 0; i--) {
+                const multiline = this.openMultilines[i];
+                if (type === multiline.type) {
+                    this.closeMultiline(multiline, i, blocks, runs, lineIndex, tokenIndex);
+                    return;
+                }
+            }
+
+            // If we didn't find a match, then we open the closer.
+            this.openMultiline(type, undefined, undefined, lineIndex, tokenIndex);
         }
-        if (this.isOpener(token) && !this.openMultilines.has(type)) {
+        if (this.isOpener(token)) {
             this.openMultiline(type, lineIndex, tokenIndex);
         }
     }
@@ -57,52 +68,68 @@ export class MultilineManager {
             token.type === TokenType.NoteOpen);
     }
 
-    openMultiline(type: MultilineType, lineIndex: number, tokenIndex: number) {
-        this.openMultilines.add(type);
-        if (!this.openMultilineStarts.has(type)) {
-            this.openMultilineStarts.set(type, [lineIndex, tokenIndex + 1]);
+    openMultiline(type: MultilineType, startLine?: number, startToken?: number, endLine?: number, endToken?: number) {
+        if (typeof startLine !== "undefined" && typeof startToken !== "undefined") {
+            this.openMultilines.push(new MultilineStructure(
+                type,
+                startLine,
+                startToken + 1
+            ));
+        }
+        if (typeof endLine !== "undefined" && typeof endToken !== "undefined") {
+            this.openMultilines.push(new MultilineStructure(
+                type,
+                undefined,
+                undefined,
+                endLine,
+                endToken - 1
+            ))
         }
     }
 
     closeMultiline(
-        type: MultilineType,
+        multiline: MultilineStructure,
+        multilineIndex: number,
         blocks: Block[],
         runs: Run[],
         lineIndex: number,
-        tokenIndex: number) {
-
-        const [lineStart, tokenStart] = this.openMultilineStarts.get(type);
-        const style = this.multilineStyles.get(type);
+        tokenIndex: number
+    ) {
+        const style = this.multilineStyles.get(multiline.type);
+        console.log("Closing multiline");
+        const startLineIndex = (typeof multiline.startLine === "undefined") ? lineIndex : multiline.startLine;
+        const tokenStartIndex = (typeof multiline.startToken === "undefined") ? tokenIndex : multiline.startToken;
+        const endLineIndex = (typeof multiline.endLine === "undefined") ? lineIndex : multiline.endLine;
+        const tokenEndIndex = (typeof multiline.endToken === "undefined") ? tokenIndex : multiline.endToken;
         if (typeof style === "undefined") return;
-        
+
         // Process all lines in between start and current
-        for (let i = lineStart + 1; i < lineIndex; i++) {
+        for (let i = startLineIndex + 1; i < endLineIndex; i++) {
             for (let run of blocks[i].runs) {
                 run.styles.add(style);
             }
         }
 
         // Process starting line from starting index to end
-        const startLine = blocks[lineStart];
-        startLine.runs[tokenStart - 1].styles.add(RunStyle.Special);
-        for (let i = tokenStart; i < startLine.runs.length; i++) {
-            startLine.runs[i].styles.add(style);
+        if (startLineIndex < endLineIndex) {
+            const startLine = blocks[startLineIndex];
+            startLine.runs[tokenStartIndex - 1].styles.add(RunStyle.Special);
+            for (let i = tokenStartIndex; i < startLine.runs.length; i++) {
+                startLine.runs[i].styles.add(style);
+            }
         }
 
         // Process current line to closing token index
-        for (let i = 0; i < tokenIndex; i++) {
+        for (let i = 0; i < tokenEndIndex; i++) {
             runs[i].styles.add(style);
         }
-        runs[tokenIndex].styles.add(RunStyle.Special);
+        runs[tokenEndIndex].styles.add(RunStyle.Special);
 
-        this.openMultilines.delete(style);
-        this.openMultilineStarts.delete(style);
-        this.activeMultilines.push(
-            new MultilineStructure(
-                type,
-                lineStart,
-                lineIndex
-            )
-        );
+        /* Add the end point to the multiline object, remove it from the open
+         * tracker, and add it to the active tracker.
+         */
+        multiline.endLine = endLineIndex;
+        this.openMultilines.splice(multilineIndex, 1);
+        this.activeMultilines.add(multiline);
     }
 }

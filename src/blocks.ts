@@ -1,16 +1,19 @@
 export class Document {
     titlePage: Map<string, string>;
     blocks: Block[];
-    multilines: MultilineStructure[];
+    activeMultilines: Set<MultilineStructure>;
+    openMultilines: MultilineStructure[];
 
     constructor(
         titlePage: Map<string, string>,
         blocks: Block[],
-        multilines: MultilineStructure[]
+        activeMultilines: Set<MultilineStructure>,
+        openMultilines: MultilineStructure[]
     ) {
         this.titlePage = titlePage;
         this.blocks = blocks;
-        this.multilines = multilines;
+        this.activeMultilines = activeMultilines;
+        this.openMultilines = openMultilines;
     }
 }
 
@@ -62,13 +65,17 @@ export enum RunStyle {
 
 export class MultilineStructure {
     type: MultilineType;
-    start: number | undefined;
-    end: number | undefined;
+    startLine: number | undefined;
+    startToken: number | undefined;
+    endLine: number | undefined;
+    endToken: number | undefined;
 
-    constructor(type: MultilineType, start?: number, end?: number) {
+    constructor(type: MultilineType, start?: number, startToken?: number, endLine?: number, endToken?: number) {
         this.type = type;
-        this.start = start;
-        this.end = end;
+        this.startLine = start;
+        this.startToken = startToken;
+        this.endLine = endLine;
+        this.endToken = endToken;
     }
 }
 
