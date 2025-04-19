@@ -1,16 +1,16 @@
-import { MultilineStructure } from "./multiline";
+import { MultilineStructure, OpenMultilineStructure } from "./multiline";
 
 export class Document {
     titlePage: Map<string, string>;
     blocks: Block[];
     activeMultilines: Set<MultilineStructure>;
-    openMultilines: MultilineStructure[];
+    openMultilines: OpenMultilineStructure[];
 
     constructor(
         titlePage: Map<string, string>,
         blocks: Block[],
         activeMultilines: Set<MultilineStructure>,
-        openMultilines: MultilineStructure[]
+        openMultilines: OpenMultilineStructure[]
     ) {
         this.titlePage = titlePage;
         this.blocks = blocks;
@@ -57,7 +57,6 @@ export class Run {
 }
 
 export enum RunStyle {
-    Centered,
     Bold,
     Italic,
     Underline,

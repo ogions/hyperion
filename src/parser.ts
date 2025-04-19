@@ -45,9 +45,11 @@ export class Parser {
 
     lexer = new Lexer();
     mlManager = new MultilineManager();
-    stylizer = new Stylizer(this.mlManager);
+    stylizer = new Stylizer();
     activeStyles = new Set();
+    isInBoneyard = false;
     isInDualDialogue = false;
+    isInNote = false;
     openTitlePageKey = "";
     openTitlePageValue: string[] = [];
 
@@ -98,9 +100,15 @@ export class Parser {
                 this.mlManager.closeTitlePage(tokens.length - 1);
             }
         }
+
+        this.parseBoneyards(tokens);
+        this.parseNotes(tokens);
         
         for (let [i, token] of tokens.entries()) {
-            const blockType = Parser.typeMap.get(token.type) ?? BlockType.Action;
+            this.parseInlines(token.content);
+            const blockType = this.isInNote ?
+                BlockType.Action :
+                (Parser.typeMap.get(token.type) ?? BlockType.Action)
             if (blockType === BlockType.BlankLine) this.isInDualDialogue = false;
 
             /* 
@@ -126,7 +134,7 @@ export class Parser {
 
     parseBlock(tokens: RunToken[], lineIndex: number): Run[] {
         const runs = [];
-        for (let [i, token] of tokens.entries()) {
+        for (let token of tokens) {
             if (token.type === RunTokenType.DualDialogue) {
                 this.isInDualDialogue = true;
             }
@@ -136,10 +144,10 @@ export class Parser {
             ) {
                 return [...runs, ...this.parseBlock(token.content, lineIndex)]; 
             }
-            if (token.isMultilineStyle()) this.mlManager.manage(token, lineIndex);
+            if (token.isMultilineStyle()) this.mlManager.manage(token as StyleToken, lineIndex);
             const text = typeof token.content === "string" ? token.content : "";
             const styles = this.stylizer.stylize(token);
-            runs.push(new Run(text, styles));
+            runs.push(new Run(text, new Set(styles)));
         }
         return runs;
     }
@@ -156,6 +164,84 @@ export class Parser {
             } else if (token.type === RunTokenType.TitlePageValue) {
                 const value = text;
                 this.openTitlePageValue.push(value);
+            }
+        }
+    }
+
+    parseBoneyards(tokens: BlockToken[]) {
+        let openBoneyard;
+        for (let blockToken of tokens) {
+            for (let runToken of blockToken.content) {
+                if (Array.isArray(runToken)) continue;
+                if (!(runToken instanceof StyleToken)) continue; 
+                if (runToken.type === RunTokenType.BoneyardOpen) {
+                    openBoneyard = runToken;
+                } else if (runToken.type === RunTokenType.BoneyardClose) {
+                    if (openBoneyard) {
+                        openBoneyard.active = true;
+                        runToken.active = true;
+                        openBoneyard = undefined;
+                    }
+                }
+            }
+        }
+    }
+
+    parseNotes(tokens: BlockToken[]) {
+        let openNote;
+        let isInBoneyard = false;
+        for (let blockToken of tokens) {
+            for (let runToken of blockToken.content) {
+                if (Array.isArray(runToken)) continue;
+                if (!(runToken instanceof StyleToken)) continue;
+
+                if (runToken.active) {
+                    if (runToken.type === RunTokenType.BoneyardOpen) isInBoneyard = true;
+                    if (runToken.type === RunTokenType.BoneyardClose) isInBoneyard = false;
+                }
+                if (isInBoneyard) continue;
+
+                if (runToken.type === RunTokenType.NoteOpen) {
+                    openNote = runToken;
+                } else if (runToken.type === RunTokenType.NoteClose) {
+                    if (openNote) {
+                        openNote.active = true;
+                        runToken.active = true;
+                        openNote = undefined;
+                    }
+                }
+            }
+        }
+    }
+
+    parseInlines(tokens: RunToken[]) {
+        const openInlines = [];
+        for (let token of tokens) {
+            if (!(token instanceof StyleToken)) continue;
+           
+            if (token.active) {
+                if (token.type === RunTokenType.BoneyardOpen) this.isInBoneyard = true;
+                if (token.type === RunTokenType.BoneyardClose) this.isInBoneyard = false;
+                if (token.type === RunTokenType.NoteOpen) this.isInNote = true;
+                if (token.type === RunTokenType.NoteClose) this.isInNote = false;
+            }
+            if (this.isInBoneyard || this.isInNote) continue;
+            
+            if (
+                token.type === RunTokenType.Bold ||
+                token.type === RunTokenType.Italic ||
+                token.type === RunTokenType.Underline
+            ) {
+                for (let i = openInlines.length - 1; i >= 0; i--) {
+                    const openInline = openInlines[i] as StyleToken;
+                    if (token.type === openInline.type) {
+                        openInline.active = true;
+                        token.active = true;
+                        openInlines.splice(i, 1);
+                        break;
+                    }
+                }
+                if (!token.active) openInlines.push(token);
             }
         }
     }

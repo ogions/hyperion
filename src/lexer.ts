@@ -113,53 +113,6 @@ export class Lexer {
             // First, handle escape tokens or reset the escaped flag.
             this.isEscaped = (token.type === RunTokenType.Escape);
 
-            /* 
-             * Then we open or activate paired style tokens. Note that no pairs
-             * can cross boneyard boundaries, nor can inline pairs cross note
-             * boundaries. Because of this, we clear open stacks on entering
-             * and leaving those structures.
-             */
-            if (token instanceof StyleToken) {
-                if (token.type === RunTokenType.BoneyardOpen) {
-                    this.openBoneyards.push(token as StyleToken);
-                    this.openNotes = [];
-                    this.openInlines = [];
-                }
-                if (token.type === RunTokenType.BoneyardClose) {
-                    const openToken = this.openBoneyards.pop();
-                    if (openToken) openToken.active = true;
-                    token.active = true;
-                    this.openNotes = [];
-                    this.openInlines = [];
-                }
-                if (token.type === RunTokenType.NoteOpen) {
-                    this.openNotes.push(token as StyleToken);
-                    this.openInlines = [];
-                }
-                if (token.type === RunTokenType.NoteClose) {
-                    const openToken = this.openNotes.pop();
-                    if (openToken) openToken.active = true;
-                    token.active = true;
-                    this.openInlines = [];
-                }
-                if (
-                    token.type === RunTokenType.Bold ||
-                    token.type === RunTokenType.Italic ||
-                    token.type === RunTokenType.Underline
-                ) {
-                    for (let i = this.openInlines.length - 1; i >= 0; i++) {
-                        const openToken = this.openInlines[i] as StyleToken;
-                        if (openToken.type === token.type) {
-                            this.openInlines.splice(i, 1);
-                            openToken.active = true;
-                            token.active = true;
-                            break;
-                        }
-                    }
-                    if (!token.active) this.openInlines.push(token);
-                }
-            }
-
             // If the token is plain text, we start/continue building a text buffer.
             if (token.type === RunTokenType.Text) {
                 this.textBuffer += token.content;

@@ -1,4 +1,4 @@
-import { RunToken, RunTokenType, StyleToken } from "./tokens";
+import { RunTokenType, StyleToken } from "./tokens";
 
 export enum MultilineType {
     Boneyard,

@@ -1,5 +1,4 @@
-import { Run, RunStyle } from "./blocks";
-import { MultilineManager } from "./multiline";
+import { RunStyle } from "./blocks";
 import { RunToken, RunTokenType, StyleToken } from "./tokens";
 
 export class Stylizer {
@@ -9,20 +8,20 @@ export class Stylizer {
         [RunTokenType.Italic, RunStyle.Italic],
         [RunTokenType.Underline, RunStyle.Underline],
         [RunTokenType.BoneyardOpen, RunStyle.Boneyard],
+        [RunTokenType.BoneyardClose, RunStyle.Boneyard],
         [RunTokenType.NoteOpen, RunStyle.Note],
+        [RunTokenType.NoteClose, RunStyle.Note]
     ]);
     activeStyles: Set<RunStyle> = new Set();
-    mlManager: MultilineManager;
-
-    constructor(mlManager: MultilineManager) {
-        this.mlManager = mlManager;
-    }
 
     stylize(token: RunToken): Set<RunStyle> {
 
         if (token instanceof StyleToken) {
+            const styles = new Set(this.activeStyles).add(RunStyle.Special);
             this.process(token);
-            return new Set([RunStyle.Special]);
+            if (token.active) {
+                return styles;
+            }
         }
 
         if (token.type === RunTokenType.SceneHeadingForce ||
