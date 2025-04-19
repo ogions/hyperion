@@ -1,118 +1,68 @@
-import { Block, Run, RunStyle } from "./blocks";
-import { Token, TokenType } from "./tokens";
+import { Run, RunStyle } from "./blocks";
+import { MultilineManager } from "./multiline";
+import { RunToken, RunTokenType, StyleToken } from "./tokens";
 
 export class Stylizer {
 
-    styleMap = new Map([
-        [TokenType.CenterLeft, RunStyle.Centered],
-        [TokenType.CenterRight, RunStyle.Centered],
-        [TokenType.Bold, RunStyle.Bold],
-        [TokenType.Italic, RunStyle.Italic],
-        [TokenType.Underline, RunStyle.Underline],
-        [TokenType.BoneyardOpen, RunStyle.Boneyard],
-        [TokenType.BoneyardClose, RunStyle.Boneyard],
-        [TokenType.NoteOpen, RunStyle.Note],
-        [TokenType.NoteClose, RunStyle.Note]
+    static styleMap = new Map([
+        [RunTokenType.Bold, RunStyle.Bold],
+        [RunTokenType.Italic, RunStyle.Italic],
+        [RunTokenType.Underline, RunStyle.Underline],
+        [RunTokenType.BoneyardOpen, RunStyle.Boneyard],
+        [RunTokenType.NoteOpen, RunStyle.Note],
     ]);
-    closerTokens = new Set([
-        TokenType.CenterRight,
-        TokenType.Bold,
-        TokenType.Italic,
-        TokenType.Underline,
-        TokenType.BoneyardClose,
-        TokenType.NoteClose
-    ]);
-    openerTokens = new Set([
-        TokenType.CenterLeft,
-        TokenType.Bold,
-        TokenType.Italic,
-        TokenType.Underline,
-        TokenType.BoneyardOpen,
-        TokenType.NoteOpen
-    ]);
-    openStyles = new Set();
-    openStyleStarts = new Map();
+    activeStyles: Set<RunStyle> = new Set();
+    mlManager: MultilineManager;
 
-    stylize(token: Token, runs: Run[], tokenIndex: number): Set<RunStyle> {
+    constructor(mlManager: MultilineManager) {
+        this.mlManager = mlManager;
+    }
 
-        // Standalone tokens can just be returned as special runs.
-        if (token.type === TokenType.SceneHeadingForce ||
-            token.type === TokenType.SceneNumberFence ||
-            token.type === TokenType.ActionForce ||
-            token.type === TokenType.CharacterForce ||
-            token.type === TokenType.LyricLeader ||
-            token.type === TokenType.TransitionForce ||
-            token.type === TokenType.SectionHeadingLeader ||
-            token.type === TokenType.SynopsisLeader) {
+    stylize(token: RunToken): Set<RunStyle> {
+
+        if (token instanceof StyleToken) {
+            this.process(token);
+            return new Set([RunStyle.Special]);
+        }
+
+        if (token.type === RunTokenType.SceneHeadingForce ||
+            token.type === RunTokenType.SceneNumberFence ||
+            token.type === RunTokenType.ActionForce ||
+            token.type === RunTokenType.CharacterForce ||
+            token.type === RunTokenType.DualDialogue ||
+            token.type === RunTokenType.LyricLeader ||
+            token.type === RunTokenType.TransitionForce ||
+            token.type === RunTokenType.SectionHeadingLeader ||
+            token.type === RunTokenType.SynopsisLeader) {
 
             return new Set([RunStyle.Special]);
         }
 
-        if (token.type === TokenType.TitlePageKey) {
+        if (token.type === RunTokenType.TitlePageKey) {
             return new Set([RunStyle.TitlePageKey]);
         }
 
-        if (token.type === TokenType.TitlePageValue) {
-            return new Set([RunStyle.TitlePageValue]);
-        }
-
-        // Plain text can be returned without any styles.
-        if (token.type === TokenType.Text) {
-            return new Set();
-        }
-
-        // All other tokens need to be checked for pairs.
-        return this.handleStyle(token, runs, tokenIndex);
+        return this.activeStyles;
     }
 
-    reset() {
-        this.openStyles = new Set();
-        this.openStyleStarts = new Map();
-    }
-
-    handleStyle(token: Token, runs: Run[], tokenIndex: number): Set<RunStyle> {
-
-        const style = this.styleMap.get(token.type);
-        if (typeof style === "undefined") return new Set();
-
-        /* Check if the token closes an open style. We need to make sure that
-         * the token is a potential closer and that the style it closes has
-         * already been opened.
-         */
-        if (this.closerTokens.has(token.type) &&
-            this.openStyles.has(style)) {
-            
-            this.closeStyle(style, runs, tokenIndex);
-            return new Set([RunStyle.Special]);
-        }
-
-        // Otherwise, as long as the token is an opener, we open a new style.
-        if (this.openerTokens.has(token.type)) {
-            this.openStyle(style, tokenIndex);
-        }
-
-        /* Open tokens are not given a special style, since we don't yet know if
-         * they will be closed. The special style is assigned later when the run
-         * is closed.
-         */
-        return new Set();
-    }
-
-    openStyle(style: RunStyle, tokenIndex: number) {
-        this.openStyles.add(style);
-        if (!this.openStyleStarts.has(style)) {
-            this.openStyleStarts.set(style, tokenIndex + 1);
+    process(token: StyleToken) {
+        if (token.active) {
+            const style = Stylizer.styleMap.get(token.type);
+            if (style === undefined) return;
+            if (this.activeStyles.has(style)) {
+                this.activeStyles.delete(style);
+            } else {
+                this.activeStyles.add(style);
+            }
         }
     }
 
-    closeStyle(style: RunStyle, runs: Run[], tokenIndex: number) {
-        const startIndex = this.openStyleStarts.get(style);
-        runs[startIndex - 1].styles.add(RunStyle.Special);
-
-        for (let i = startIndex; i < tokenIndex; i++) {
-            runs[i].styles.add(style);
-        } 
-
-        this.openStyles.delete(style);
+    isMultiline(token: StyleToken) {
+        return (
+            token.type === RunTokenType.BoneyardOpen ||
+            token.type === RunTokenType.BoneyardClose ||
+            token.type === RunTokenType.NoteOpen ||
+            token.type === RunTokenType.NoteClose
+        );
     }
 }

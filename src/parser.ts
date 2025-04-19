@@ -1,52 +1,55 @@
-import { Block, BlockType, Document, Run } from "./blocks";
+import { Block, BlockType, Document, Run, RunStyle } from "./blocks";
 import { Lexer, LexerOptions } from "./lexer";
 import { MultilineManager } from "./multiline";
 import { Stylizer } from "./stylizer";
-import { Token, TokenType } from "./tokens";
+import { BlockToken, BlockTokenType, RunToken, RunTokenType, StyleToken } from "./tokens";
 
 export class ParserOptions {
     isDocumentStart: boolean;
     isInDialogue: boolean;
+    isInDualDialogue: boolean;
     nextLineIsBlank: boolean;
     previousLineIsBlank: boolean;
-    includeMarkup: boolean;
 
     constructor(
         isDocumentStart?: boolean,
         isInDialogue?: boolean,
+        isInDualDialogue?: boolean,
         nextLineIsBlank?: boolean,
         previousLineIsBlank?: boolean,
-        includeMarkup?: boolean
     ) {
         this.isDocumentStart = isDocumentStart ?? false;
         this.isInDialogue = isInDialogue ?? false;
+        this.isInDualDialogue = isInDualDialogue ?? false;
         this.nextLineIsBlank = nextLineIsBlank ?? true;
         this.previousLineIsBlank = previousLineIsBlank ?? true;
-        this.includeMarkup = includeMarkup ?? false;
     }
 }
 
 export class Parser {
 
+    static typeMap = new Map([
+        [BlockTokenType.BlankLine, BlockType.BlankLine],
+        [BlockTokenType.SceneHeading, BlockType.SceneHeading],
+        [BlockTokenType.Action, BlockType.Action],
+        [BlockTokenType.Character, BlockType.Character],
+        [BlockTokenType.Dialogue, BlockType.Dialogue],
+        [BlockTokenType.Parenthetical, BlockType.Parenthetical],
+        [BlockTokenType.Lyric, BlockType.Lyric],
+        [BlockTokenType.Transition, BlockType.Transition],
+        [BlockTokenType.PageBreak, BlockType.PageBreak],
+        [BlockTokenType.SectionHeading, BlockType.SectionHeading],
+        [BlockTokenType.Synopsis, BlockType.Synopsis],
+        [BlockTokenType.TitlePage, BlockType.TitlePage]
+    ]);
+
     lexer = new Lexer();
     mlManager = new MultilineManager();
-    stylizer = new Stylizer();
-    typeMap = new Map([
-        [TokenType.BlankLine, BlockType.BlankLine],
-        [TokenType.SceneHeading, BlockType.SceneHeading],
-        [TokenType.Action, BlockType.Action],
-        [TokenType.Character, BlockType.Character],
-        [TokenType.Dialogue, BlockType.Dialogue],
-        [TokenType.Parenthetical, BlockType.Parenthetical],
-        [TokenType.Lyric, BlockType.Lyric],
-        [TokenType.Transition, BlockType.Transition],
-        [TokenType.PageBreak, BlockType.PageBreak],
-        [TokenType.SectionHeading, BlockType.SectionHeading],
-        [TokenType.Synopsis, BlockType.Synopsis],
-        [TokenType.TitlePage, BlockType.TitlePage]
-    ]);
-    openKey = "";
-    openValue: string[] = [];
+    stylizer = new Stylizer(this.mlManager);
+    activeStyles = new Set();
+    isInDualDialogue = false;
+    openTitlePageKey = "";
+    openTitlePageValue: string[] = [];
 
     parse(chunk: string, options: ParserOptions): Document {
         const lexerOptions = new LexerOptions(
@@ -55,50 +58,62 @@ export class Parser {
             options.nextLineIsBlank,
             options.previousLineIsBlank
         );
+
         const tokens = this.lexer.lex(chunk, lexerOptions);
-        console.log(tokens);
-        const blocks = [];
-        this.mlManager.reset();
+
         const titlePage = new Map();
-        for (let [i, token] of tokens.entries()) {
-            const blockType = this.typeMap.get(token.type) ?? BlockType.Action;
+        const blocks = [];
 
-            // Safeguard in case this token doesn't contain any inner tokens
-            if (typeof token.content === "string") {
-                blocks.push(
-                    new Block(
-                        blockType,
-                        [new Run(token.content, new Set())]
-                    )
-                );
-            } else {
+        this.mlManager.reset();
+        this.isInDualDialogue = options.isInDualDialogue;
 
-                // Otherwise, we process title page tokens as key/value pairs
-                if (blockType === BlockType.TitlePage) {
-                    this.parseTitlePageTokens(token.content, titlePage);
+        /* 
+         * If we're at the start of the document, read the title page into a map.
+         * Note that this doesn't do any inline parsing or read the tokens into
+         * blocks; that happens in the main document parse. This just builds the
+         * map for later reference.
+         */
+        if (options.isDocumentStart) {
+            for (let [i, token] of tokens.entries()) {
+                if (token.type === BlockTokenType.TitlePage) {
+                    this.parseTitlePageBlock(token.content, titlePage);
                     this.mlManager.openTitlePage();
-                } else if (blockType === BlockType.BlankLine) {
-                    if (this.mlManager.hasOpenTitlePage) this.mlManager.closeTitlePage(i);
+                } else {
+                    if (this.mlManager.hasOpenTitlePage) {
+                        this.mlManager.closeTitlePage(i);
+                    }
+                    break;
                 }
-
-                /* Then all tokens (including title page tokens) are parsed for
-                 * inline styles and multiline structures.
-                 */
-                const runs = this.parseInnerTokens(token.content, blocks, i);
-                blocks.push(new Block(blockType, runs));
+            }
+            /* 
+             * If there are any open title page items left when we finish parsing,
+             * we add them to the title page and close the open items.
+             */
+            if (this.openTitlePageKey) {
+                titlePage.set(this.openTitlePageKey, this.openTitlePageValue.join("\n"));
+                this.openTitlePageKey = "";
+                this.openTitlePageValue = [];
+            }
+            if (this.mlManager.hasOpenTitlePage) {
+                this.mlManager.closeTitlePage(tokens.length - 1);
             }
         }
+        
+        for (let [i, token] of tokens.entries()) {
+            const blockType = Parser.typeMap.get(token.type) ?? BlockType.Action;
+            if (blockType === BlockType.BlankLine) this.isInDualDialogue = false;
 
-        /* If there are any open title page items left when we finish parsing,
-         * we add them to the title page and close the open items.
-         */
-        if (this.openKey) {
-            titlePage.set(this.openKey, this.openValue.join("\n"));
-            this.openKey = "";
-            this.openValue = [];
-        }
-        if (this.mlManager.hasOpenTitlePage) {
-            this.mlManager.closeTitlePage(blocks.length);
+            /* 
+             * Then all tokens (including title page tokens) are parsed for
+             * inline styles and multiline structures.
+             */
+            const runs = this.parseBlock(token.content, i);
+
+            blocks.push(new Block(
+                blockType,
+                runs,
+                this.isInDualDialogue
+            ));
         }
 
         return new Document(
@@ -109,37 +124,38 @@ export class Parser {
         );
     }
 
-    parseInnerTokens(tokens: Token[], blocks: Block[], lineIndex: number): Run[] {
+    parseBlock(tokens: RunToken[], lineIndex: number): Run[] {
         const runs = [];
         for (let [i, token] of tokens.entries()) {
+            if (token.type === RunTokenType.DualDialogue) {
+                this.isInDualDialogue = true;
+            }
+            if (
+                token.type === RunTokenType.TitlePageValue &&
+                Array.isArray(token.content)
+            ) {
+                return [...runs, ...this.parseBlock(token.content, lineIndex)]; 
+            }
+            if (token.isMultilineStyle()) this.mlManager.manage(token, lineIndex);
             const text = typeof token.content === "string" ? token.content : "";
-
-            /* UGLY. Right now stylizer returns style of closing token and the
-             * rest are side effects, while multiline manager does everything
-             * by mutating inputs. Standardize and refactor this.
-             */
-            const styles = this.stylizer.stylize(token, runs, i);
+            const styles = this.stylizer.stylize(token);
             runs.push(new Run(text, styles));
-            if (this.mlManager.multilineTokens.has(token.type)) {
-                this.mlManager.manage(token, blocks, runs, lineIndex, i);
-            } 
         }
-        this.stylizer.reset();
         return runs;
     }
 
-    parseTitlePageTokens(tokens: Token[], titlePage: Map<string, string>) {
+    parseTitlePageBlock(tokens: RunToken[], titlePage: Map<string, string>) {
         for (let token of tokens) {
             const text = typeof token.content === "string" ? token.content : "";
-            if (token.type === TokenType.TitlePageKey) {
-                if (this.openKey && this.openValue) {
-                    titlePage.set(this.openKey, this.openValue.join("\n"));
+            if (token.type === RunTokenType.TitlePageKey) {
+                if (this.openTitlePageKey && this.openTitlePageValue) {
+                    titlePage.set(this.openTitlePageKey, this.openTitlePageValue.join("\n"));
                 }
-                this.openKey = text;
-                this.openValue = [];
-            } else if (token.type === TokenType.TitlePageValue) {
+                this.openTitlePageKey = text;
+                this.openTitlePageValue = [];
+            } else if (token.type === RunTokenType.TitlePageValue) {
                 const value = text;
-                this.openValue.push(value);
+                this.openTitlePageValue.push(value);
             }
         }
     }

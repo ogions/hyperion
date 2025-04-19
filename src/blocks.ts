@@ -1,3 +1,5 @@
+import { MultilineStructure } from "./multiline";
+
 export class Document {
     titlePage: Map<string, string>;
     blocks: Block[];
@@ -20,10 +22,12 @@ export class Document {
 export class Block {
     type: BlockType;
     runs: Run[];
+    isDual?: boolean;
 
-    constructor(type: BlockType, runs: Run[]) {
+    constructor(type: BlockType, runs: Run[], isDual?: boolean) {
         this.type = type;
         this.runs = runs;
+        if (isDual) this.isDual = isDual;
     }
 }
 

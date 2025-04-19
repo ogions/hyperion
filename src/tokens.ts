@@ -1,43 +1,94 @@
-export class Token {
-    type: TokenType;
-    content: string | Token[];
+export class BlockToken {
+    type: BlockTokenType;
+    content: RunToken[];
+    centered?: boolean;
 
-    constructor(type: TokenType, content: string | Token[]) {
+    constructor(
+        type: BlockTokenType,
+        content: RunToken[],
+        centered?: boolean
+    ) {
         this.type = type;
         this.content = content;
+        if (centered) this.centered = centered;
     }
 }
 
-export enum TokenType {
+export class RunToken {
+    type: RunTokenType;
+    content: string | RunToken[];
+
+    constructor(type: RunTokenType, content: string | RunToken[]) {
+        this.type = type;
+        this.content = content;
+    }
+    
+    isMultilineStyle(): boolean {
+        return (
+            this.type === RunTokenType.BoneyardOpen ||
+            this.type === RunTokenType.BoneyardClose ||
+            this.type === RunTokenType.NoteOpen ||
+            this.type === RunTokenType.NoteClose
+        );
+    }
+}
+
+export class StyleToken extends RunToken {
+    active: boolean;
+
+    constructor(type: RunTokenType, content: string, active?: boolean) {
+        super(type, content);
+        this.active = active || false;
+    }
+
+    isOpener(): boolean {
+        return (
+            this.type === RunTokenType.BoneyardOpen ||
+            this.type === RunTokenType.NoteOpen
+        );
+    }
+    
+    isCloser(): boolean {
+        return (
+            this.type === RunTokenType.BoneyardClose ||
+            this.type === RunTokenType.NoteClose
+        );
+    }
+}
+
+export enum BlockTokenType {
     BlankLine,
     SceneHeading,
+    Action,
+    Character,
+    Dialogue,
+    Parenthetical,
+    Lyric,
+    Transition,
+    PageBreak,
+    SectionHeading,
+    Synopsis,
+    TitlePage
+}
+
+export enum RunTokenType {
     SceneHeadingForce,
     SceneNumber,
     SceneNumberFence,
-    Action,
     ActionForce,
-    Character,
     CharacterForce,
-    Dialogue,
-    Parenthetical,
     DualDialogue,
-    Lyric,
     LyricLeader,
-    Transition,
     TransitionForce,
     CenterLeft,
     CenterRight,
     Escape,
-    PageBreak,
     NoteOpen,
     NoteClose,
     BoneyardOpen,
     BoneyardClose,
-    SectionHeading,
     SectionHeadingLeader,
-    Synopsis,
     SynopsisLeader,
-    TitlePage,
     TitlePageKey,
     TitlePageValue,
     Italic,

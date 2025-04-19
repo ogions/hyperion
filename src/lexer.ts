@@ -1,4 +1,4 @@
-import { Token, TokenType } from "./tokens";
+import { BlockToken, BlockTokenType, RunToken, RunTokenType, StyleToken } from "./tokens";
 import { Tokenizer } from "./tokenizer";
 
 export class LexerOptions {
@@ -26,7 +26,6 @@ export class Lexer {
     // Block-level flags
     isDocumentStart = false;
     isInDialogue = false;
-    isInTitlePage = true;
     nextLineIsBlank = true;
     previousLineIsBlank = true;
 
@@ -34,20 +33,45 @@ export class Lexer {
     isEscaped = false;
     nextChar = "";
 
+    openBoneyards: StyleToken[] = [];
+    openNotes: StyleToken[] = [];
+    openInlines: StyleToken[] = [];
     textBuffer = "";
     tokenizer = new Tokenizer();
 
-    lex(chunk: string, options: LexerOptions): Token[] {
+    lex(chunk: string, options: LexerOptions): BlockToken[] {
 
         this.isDocumentStart = options.isDocumentStart;
         this.isInDialogue = options.isInDialogue;
-        this.isInTitlePage = false;
         this.previousLineIsBlank = options.previousLineIsBlank;
 
         const lines = chunk.split("\n");
         const tokens = [];
+        this.openBoneyards = [];
+        this.openNotes = [];
+        this.openInlines = [];
 
-        for (let i = 0; i < lines.length; i++) {
+        /* 
+         * If there's a title page at the start of the document, we use a
+         * separate function to process that first.
+         */
+        if (this.isDocumentStart && Tokenizer.regexes.titlePageKey.test(lines[0])) {
+            this.isDocumentStart = false;
+            for (let i = 0; i < lines.length; i++) {
+                const token = this.tokenizer.tokenizeTitlePage(lines[i], this);
+                if (
+                    token.type === BlockTokenType.BlankLine ||
+                    token.type === BlockTokenType.PageBreak
+                ) {
+                    this.previousLineIsBlank = true;
+                    this.isInDialogue = false;
+                    break;
+                }
+                tokens.push(token);
+            }
+        }
+
+        for (let i = tokens.length; i < lines.length; i++) {
             if (i < lines.length - 1) {
                 const nextLine = lines[i + 1];
                 this.nextLineIsBlank = !nextLine;
@@ -57,13 +81,11 @@ export class Lexer {
 
             const token = this.tokenizer.tokenizeLine(lines[i], this);
 
-            this.isDocumentStart = false;
-            if (token.type === TokenType.BlankLine ||
-                token.type === TokenType.PageBreak) {
+            if (token.type === BlockTokenType.BlankLine ||
+                token.type === BlockTokenType.PageBreak) {
                 this.previousLineIsBlank = true;
                 this.isInDialogue = false;
-                this.isInTitlePage = false;
-            } else if (token.type === TokenType.Character) {
+            } else if (token.type === BlockTokenType.Character) {
                 this.isInDialogue = true;
                 this.previousLineIsBlank = false;
             } else {
@@ -75,7 +97,7 @@ export class Lexer {
         return tokens;
     }
 
-    lexLine(line: string): Token[] {
+    lexLine(line: string): RunToken[] {
 
         const tokens = [];
 
@@ -89,20 +111,63 @@ export class Lexer {
             const token = this.tokenizer.tokenizeChar(line[i], this);
 
             // First, handle escape tokens or reset the escaped flag.
-            if (token.type === TokenType.Escape) {
-                this.isEscaped = true;
-            } else {
-                this.isEscaped = false;
+            this.isEscaped = (token.type === RunTokenType.Escape);
+
+            /* 
+             * Then we open or activate paired style tokens. Note that no pairs
+             * can cross boneyard boundaries, nor can inline pairs cross note
+             * boundaries. Because of this, we clear open stacks on entering
+             * and leaving those structures.
+             */
+            if (token instanceof StyleToken) {
+                if (token.type === RunTokenType.BoneyardOpen) {
+                    this.openBoneyards.push(token as StyleToken);
+                    this.openNotes = [];
+                    this.openInlines = [];
+                }
+                if (token.type === RunTokenType.BoneyardClose) {
+                    const openToken = this.openBoneyards.pop();
+                    if (openToken) openToken.active = true;
+                    token.active = true;
+                    this.openNotes = [];
+                    this.openInlines = [];
+                }
+                if (token.type === RunTokenType.NoteOpen) {
+                    this.openNotes.push(token as StyleToken);
+                    this.openInlines = [];
+                }
+                if (token.type === RunTokenType.NoteClose) {
+                    const openToken = this.openNotes.pop();
+                    if (openToken) openToken.active = true;
+                    token.active = true;
+                    this.openInlines = [];
+                }
+                if (
+                    token.type === RunTokenType.Bold ||
+                    token.type === RunTokenType.Italic ||
+                    token.type === RunTokenType.Underline
+                ) {
+                    for (let i = this.openInlines.length - 1; i >= 0; i++) {
+                        const openToken = this.openInlines[i] as StyleToken;
+                        if (openToken.type === token.type) {
+                            this.openInlines.splice(i, 1);
+                            openToken.active = true;
+                            token.active = true;
+                            break;
+                        }
+                    }
+                    if (!token.active) this.openInlines.push(token);
+                }
             }
 
             // If the token is plain text, we start/continue building a text buffer.
-            if (token.type === TokenType.Text) {
+            if (token.type === RunTokenType.Text) {
                 this.textBuffer += token.content;
             } else {
                 // Otherwise, we push and clear the text buffer.
                 if (this.textBuffer.length > 0) {
-                    tokens.push(new Token(
-                        TokenType.Text,
+                    tokens.push(new RunToken(
+                        RunTokenType.Text,
                         this.textBuffer
                     ));
                     this.textBuffer = "";
@@ -114,9 +179,10 @@ export class Lexer {
                 tokens.push(token);
             }
         }
+        // Push any leftover buffer text at the end.
         if (this.textBuffer.length > 0) {
-            tokens.push(new Token(
-                TokenType.Text,
+            tokens.push(new RunToken(
+                RunTokenType.Text,
                 this.textBuffer
             ));
             this.textBuffer = "";
