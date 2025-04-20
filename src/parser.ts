@@ -120,6 +120,7 @@ export class Parser {
             blocks.push(new Block(
                 blockType,
                 runs,
+                token.centered,
                 this.isInDualDialogue
             ));
         }

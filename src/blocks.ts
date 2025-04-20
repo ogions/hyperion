@@ -22,11 +22,13 @@ export class Document {
 export class Block {
     type: BlockType;
     runs: Run[];
+    centered?: boolean;
     isDual?: boolean;
 
-    constructor(type: BlockType, runs: Run[], isDual?: boolean) {
+    constructor(type: BlockType, runs: Run[], centered?: boolean, isDual?: boolean) {
         this.type = type;
         this.runs = runs;
+        if (centered) this.centered = centered;
         if (isDual) this.isDual = isDual;
     }
 }
