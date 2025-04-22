@@ -166,32 +166,19 @@ export class Parser {
                     this.isInDualDialogue = true;
                 }
                 if (token.isMultilineStyle()) {
+                    console.log("found multiline");
                     this.mlManager.manage(token as StyleToken, lineIndex);
                 }
                 const text = token.content;
-                /*
-                 * Section headings and synopses don't allow inline styles
-                 * except for their respective leading markers, so we handle
-                 * those blocks separately.
-                 */
-                if (blockToken.allowsInlineStyles()) {
-                    const styles = this.stylizer.stylize(token);
-                    runs.push(new Run(text, styles));
-                } else {
-                    const styles = (
-                        token.type === RunTokenType.SectionHeadingLeader ||
-                        token.type === RunTokenType.SynopsisLeader
-                    ) ?
-                        this.stylizer.stylize(token) :
-                        new Set([]);
-                    runs.push(new Run(text, styles));
-                }
+                const styles = this.stylizer.stylize(token, blockToken.allowsInlineStyles());
+                runs.push(new Run(text, styles));
             }
         } else {
             /*
              *  A RunToken should only enter this function if it contains other
-             *  RunTokens (that is, it's a title page value). If it isn't
-             *  nested for some reason, we return an empty array.
+             *  RunTokens (that is, if it's a title page value). If it isn't
+             *  nested for some reason, there's been a problem and we return an
+             *  empty array.
              */
             if (typeof blockToken.content === "string") return [];
 

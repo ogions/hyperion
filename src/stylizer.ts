@@ -14,11 +14,13 @@ export class Stylizer {
     ]);
     activeStyles: Set<RunStyle> = new Set();
 
-    stylize(token: RunToken): Set<RunStyle> {
+    stylize(token: RunToken, allowInlineStyles?: boolean): Set<RunStyle> {
+
+        allowInlineStyles = allowInlineStyles ?? true;
 
         if (token instanceof StyleToken) {
-            const styles = new Set(this.activeStyles).add(RunStyle.Special);
-            this.process(token, styles);
+            const styles = new Set(this.activeStyles);
+            this.process(token, styles, allowInlineStyles);
             if (token.active) {
                 return styles;
             }
@@ -44,16 +46,33 @@ export class Stylizer {
         return new Set(this.activeStyles);
     }
 
-    process(token: StyleToken, styles: Set<RunStyle>) {
+    process(token: StyleToken, styles: Set<RunStyle>, allowInlineStyles: boolean) {
         if (token.active) {
             const style = Stylizer.styleMap.get(token.type);
             if (style === undefined) return;
             if (this.activeStyles.has(style)) {
                 this.activeStyles.delete(style);
                 styles.delete(style);
+                styles.add(RunStyle.Special);
             } else {
-                this.activeStyles.add(style);
+                /*
+                 * Section headings and synopses don't allow inline styles
+                 * except for their respective leading markers, so we ignore
+                 * those if needed.
+                 */
+                if (!(this.isInlineStyle(style) && !allowInlineStyles)) {
+                    this.activeStyles.add(style);
+                    styles.add(RunStyle.Special);
+                }
             }
         }
+    }
+
+    isInlineStyle(style: RunStyle) {
+        return (
+            style === RunStyle.Bold ||
+            style === RunStyle.Italic ||
+            style === RunStyle.Underline
+        );
     }
 }
