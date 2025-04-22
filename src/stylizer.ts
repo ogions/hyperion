@@ -51,6 +51,11 @@ export class Stylizer {
             const style = Stylizer.styleMap.get(token.type);
             if (style === undefined) return;
             if (this.activeStyles.has(style)) {
+                /*
+                 * If we're closing a style, we make sure that the closing
+                 * token doesn't still have that style, and we mark it as
+                 * special.
+                 */
                 this.activeStyles.delete(style);
                 styles.delete(style);
                 styles.add(RunStyle.Special);

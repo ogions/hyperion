@@ -1,10 +1,10 @@
 import { Block, BlockType, Document, Run, RunStyle } from "./blocks";
-import { Lexer, LexerOptions } from "./lexer";
+import { Lexer, LexerContext } from "./lexer";
 import { MultilineManager } from "./multiline";
 import { Stylizer } from "./stylizer";
 import { BlockToken, BlockTokenType, RunToken, RunTokenType, StyleToken } from "./tokens";
 
-export class ParserOptions {
+export class ParserContext {
     isDocumentStart: boolean;
     isInDialogue: boolean;
     isInDualDialogue: boolean;
@@ -46,23 +46,24 @@ export class Parser {
     lexer = new Lexer();
     mlManager = new MultilineManager();
     stylizer = new Stylizer();
+
     activeStyles = new Set();
+    openTitlePageKey = "";
+    openTitlePageValue: string[] = [];
     isInBoneyard = false;
     isInDualDialogue = false;
     isInNote = false;
-    openTitlePageKey = "";
-    openTitlePageValue: string[] = [];
 
-    parse(chunk: string, options: ParserOptions): Document {
-        const lexerOptions = new LexerOptions(
-            options.isDocumentStart,
-            options.isInDialogue,
-            options.nextLineIsBlank,
-            options.previousLineIsBlank
+    parse(chunk: string, context: ParserContext): Document {
+        const lexerContext = new LexerContext(
+            context.isDocumentStart,
+            context.isInDialogue,
+            context.nextLineIsBlank,
+            context.previousLineIsBlank
         );
-        this.isInDualDialogue = options.isInDualDialogue;
+        this.isInDualDialogue = context.isInDualDialogue;
 
-        const tokens = this.lexer.lex(chunk, lexerOptions);
+        const tokens = this.lexer.lex(chunk, lexerContext);
 
         const titlePage = new Map();
         const blocks = [];
@@ -74,7 +75,7 @@ export class Parser {
          * blocks; that happens in the main document parse. This just builds the
          * map for later reference.
          */
-        if (options.isDocumentStart) {
+        if (context.isDocumentStart) {
             for (let [i, token] of tokens.entries()) {
                 if (token.type === BlockTokenType.TitlePage) {
                     this.parseTitlePageBlock(token.content, titlePage);
@@ -162,13 +163,18 @@ export class Parser {
                 }
                 if (typeof token.content !== "string") continue;
 
+                /*
+                 * Handle any special cases, like flagging dual dialogue and
+                 * processing multilines.
+                 */
                 if (token.type === RunTokenType.DualDialogue) {
                     this.isInDualDialogue = true;
                 }
                 if (token.isMultilineStyle()) {
-                    console.log("found multiline");
                     this.mlManager.manage(token as StyleToken, lineIndex);
                 }
+
+                // Stylize the token and store it as a run.
                 const text = token.content;
                 const styles = this.stylizer.stylize(token, blockToken.allowsInlineStyles());
                 runs.push(new Run(text, styles));
@@ -182,6 +188,12 @@ export class Parser {
              */
             if (typeof blockToken.content === "string") return [];
 
+            /*
+             * From there, we can do a slightly modified version of the above
+             * parse. We don't have to worry about dual dialogue, but we still
+             * need to track multilines. We also only add the "TitlePageValue"
+             * run style to plain text to avoid overriding other styles.
+             */
             this.parseInlines(blockToken.content);
             for (let token of blockToken.content) {
                 if (typeof token.content !== "string") continue;
@@ -238,6 +250,7 @@ export class Parser {
         let openNote;
         let isInBoneyard = false;
         for (let token of this.lexer.multilineTokens) {
+            // Notes aren't allowed inside boneyards.
             if (token.active) {
                 if (token.type === RunTokenType.BoneyardOpen) isInBoneyard = true;
                 if (token.type === RunTokenType.BoneyardClose) isInBoneyard = false;
@@ -260,14 +273,17 @@ export class Parser {
         const openInlines = [];
         for (let token of tokens) {
             if (!(token instanceof StyleToken)) continue;
-          
             // Inline styles aren't allowed inside notes.
             if (token.active) {
                 if (token.type === RunTokenType.NoteOpen) this.isInNote = true;
                 if (token.type === RunTokenType.NoteClose) this.isInNote = false;
             }
             if (this.isInNote) continue;
-            
+           
+            /*
+             * We look back for a matching token to activate. If we don't find
+             * one, we store it as open.
+             */
             if (
                 token.type === RunTokenType.Bold ||
                 token.type === RunTokenType.Italic ||

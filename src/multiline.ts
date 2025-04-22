@@ -69,6 +69,13 @@ export class MultilineManager {
                     true
                 ));
             }
+            /*
+             * If the token is a closer, we iterate backwards over open
+             * multilines and try to find a matching opener. Otherwise, we store
+             * it as an open closer (could be closed by an opener later).
+             *
+             * Crystal clear, right?
+             */
             if (token.isCloser()) {
                 for (let i = this.openMultilines.length - 1; i >= 0; i--) {
                     const openMultiline = this.openMultilines[i];
