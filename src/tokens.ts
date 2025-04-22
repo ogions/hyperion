@@ -12,6 +12,13 @@ export class BlockToken {
         this.content = content;
         if (centered) this.centered = centered;
     }
+
+    allowsInlineStyles(): boolean {
+        return !(
+            this.type === BlockTokenType.SectionHeading ||
+            this.type === BlockTokenType.Synopsis
+        );
+    }
 }
 
 export class RunToken {

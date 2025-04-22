@@ -60,14 +60,13 @@ export class Parser {
             options.nextLineIsBlank,
             options.previousLineIsBlank
         );
+        this.isInDualDialogue = options.isInDualDialogue;
 
         const tokens = this.lexer.lex(chunk, lexerOptions);
 
         const titlePage = new Map();
         const blocks = [];
-
         this.mlManager.reset();
-        this.isInDualDialogue = options.isInDualDialogue;
 
         /* 
          * If we're at the start of the document, read the title page into a map.
@@ -101,21 +100,29 @@ export class Parser {
             }
         }
 
-        this.parseBoneyards(tokens);
-        this.parseNotes(tokens);
+        /*
+         * We need to handle multiline structures now because they may break
+         * inline styles. Similarly, boneyards can break notes, so we need to
+         * handle those completely first.
+         */
+        this.parseBoneyards();
+        this.parseNotes();
         
         for (let [i, token] of tokens.entries()) {
             this.parseInlines(token.content);
+
+            // Unlike boneyards, notes can't contain any block-level styles.
             const blockType = this.isInNote ?
                 BlockType.Action :
                 (Parser.typeMap.get(token.type) ?? BlockType.Action)
+
             if (blockType === BlockType.BlankLine) this.isInDualDialogue = false;
 
             /* 
              * Then all tokens (including title page tokens) are parsed for
              * inline styles and multiline structures.
              */
-            const runs = this.parseBlock(token.content, i);
+            const runs = this.parseBlock(token, i);
 
             blocks.push(new Block(
                 blockType,
@@ -133,22 +140,78 @@ export class Parser {
         );
     }
 
-    parseBlock(tokens: RunToken[], lineIndex: number): Run[] {
+    parseBlock(blockToken: BlockToken | RunToken, lineIndex: number): Run[] {
         const runs = [];
-        for (let token of tokens) {
-            if (token.type === RunTokenType.DualDialogue) {
-                this.isInDualDialogue = true;
+
+        /*
+         * We need to handle both block tokens and nested run tokens. The
+         * latter should only occur in title page values.
+         */
+        if (blockToken instanceof BlockToken) {
+            for (let token of blockToken.content) {
+                /* 
+                 * If the token is a title page value, then we need to iterate
+                 * over its nested values and return those concatenated with
+                 * the runs we've collected so far.
+                 *
+                 * If it's not a title page value, then it should only have a
+                 * string as content, so we continue if that's not the case.
+                 */
+                if (token.type === RunTokenType.TitlePageValue) {
+                    return [...runs, ...this.parseBlock(token, lineIndex)]; 
+                }
+                if (typeof token.content !== "string") continue;
+
+                if (token.type === RunTokenType.DualDialogue) {
+                    this.isInDualDialogue = true;
+                }
+                if (token.isMultilineStyle()) {
+                    this.mlManager.manage(token as StyleToken, lineIndex);
+                }
+                const text = token.content;
+                /*
+                 * Section headings and synopses don't allow inline styles
+                 * except for their respective leading markers, so we handle
+                 * those blocks separately.
+                 */
+                if (blockToken.allowsInlineStyles()) {
+                    const styles = this.stylizer.stylize(token);
+                    runs.push(new Run(text, styles));
+                } else {
+                    const styles = (
+                        token.type === RunTokenType.SectionHeadingLeader ||
+                        token.type === RunTokenType.SynopsisLeader
+                    ) ?
+                        this.stylizer.stylize(token) :
+                        new Set([]);
+                    runs.push(new Run(text, styles));
+                }
             }
-            if (
-                token.type === RunTokenType.TitlePageValue &&
-                Array.isArray(token.content)
-            ) {
-                return [...runs, ...this.parseBlock(token.content, lineIndex)]; 
+        } else {
+            /*
+             *  A RunToken should only enter this function if it contains other
+             *  RunTokens (that is, it's a title page value). If it isn't
+             *  nested for some reason, we return an empty array.
+             */
+            if (typeof blockToken.content === "string") return [];
+
+            this.parseInlines(blockToken.content);
+            for (let token of blockToken.content) {
+                if (typeof token.content !== "string") continue;
+                if (token.isMultilineStyle()) {
+                    this.mlManager.manage(token as StyleToken, lineIndex);
+                }
+                const text = token.content;
+                const styles = this.stylizer.stylize(token);
+                if (!(
+                    styles.has(RunStyle.Boneyard) ||
+                    styles.has(RunStyle.Note) ||
+                    styles.has(RunStyle.Special)
+                )) {
+                    styles.add(RunStyle.TitlePageValue);
+                }
+                runs.push(new Run(text, styles));
             }
-            if (token.isMultilineStyle()) this.mlManager.manage(token as StyleToken, lineIndex);
-            const text = typeof token.content === "string" ? token.content : "";
-            const styles = this.stylizer.stylize(token);
-            runs.push(new Run(text, new Set(styles)));
         }
         return runs;
     }
@@ -169,47 +232,38 @@ export class Parser {
         }
     }
 
-    parseBoneyards(tokens: BlockToken[]) {
+    parseBoneyards() {
         let openBoneyard;
-        for (let blockToken of tokens) {
-            for (let runToken of blockToken.content) {
-                if (Array.isArray(runToken)) continue;
-                if (!(runToken instanceof StyleToken)) continue; 
-                if (runToken.type === RunTokenType.BoneyardOpen) {
-                    openBoneyard = runToken;
-                } else if (runToken.type === RunTokenType.BoneyardClose) {
-                    if (openBoneyard) {
-                        openBoneyard.active = true;
-                        runToken.active = true;
-                        openBoneyard = undefined;
-                    }
+        for (let token of this.lexer.multilineTokens) {
+            if (token.type === RunTokenType.BoneyardOpen) {
+                openBoneyard = token;
+            } else if (token.type === RunTokenType.BoneyardClose) {
+                if (openBoneyard) {
+                    openBoneyard.active = true;
+                    token.active = true;
+                    openBoneyard = undefined;
                 }
             }
         }
     }
 
-    parseNotes(tokens: BlockToken[]) {
+    parseNotes() {
         let openNote;
         let isInBoneyard = false;
-        for (let blockToken of tokens) {
-            for (let runToken of blockToken.content) {
-                if (Array.isArray(runToken)) continue;
-                if (!(runToken instanceof StyleToken)) continue;
+        for (let token of this.lexer.multilineTokens) {
+            if (token.active) {
+                if (token.type === RunTokenType.BoneyardOpen) isInBoneyard = true;
+                if (token.type === RunTokenType.BoneyardClose) isInBoneyard = false;
+            }
+            if (isInBoneyard) continue;
 
-                if (runToken.active) {
-                    if (runToken.type === RunTokenType.BoneyardOpen) isInBoneyard = true;
-                    if (runToken.type === RunTokenType.BoneyardClose) isInBoneyard = false;
-                }
-                if (isInBoneyard) continue;
-
-                if (runToken.type === RunTokenType.NoteOpen) {
-                    openNote = runToken;
-                } else if (runToken.type === RunTokenType.NoteClose) {
-                    if (openNote) {
-                        openNote.active = true;
-                        runToken.active = true;
-                        openNote = undefined;
-                    }
+            if (token.type === RunTokenType.NoteOpen) {
+                openNote = token;
+            } else if (token.type === RunTokenType.NoteClose) {
+                if (openNote) {
+                    openNote.active = true;
+                    token.active = true;
+                    openNote = undefined;
                 }
             }
         }
@@ -219,14 +273,13 @@ export class Parser {
         const openInlines = [];
         for (let token of tokens) {
             if (!(token instanceof StyleToken)) continue;
-           
+          
+            // Inline styles aren't allowed inside notes.
             if (token.active) {
-                if (token.type === RunTokenType.BoneyardOpen) this.isInBoneyard = true;
-                if (token.type === RunTokenType.BoneyardClose) this.isInBoneyard = false;
                 if (token.type === RunTokenType.NoteOpen) this.isInNote = true;
                 if (token.type === RunTokenType.NoteClose) this.isInNote = false;
             }
-            if (this.isInBoneyard || this.isInNote) continue;
+            if (this.isInNote) continue;
             
             if (
                 token.type === RunTokenType.Bold ||
@@ -234,7 +287,7 @@ export class Parser {
                 token.type === RunTokenType.Underline
             ) {
                 for (let i = openInlines.length - 1; i >= 0; i--) {
-                    const openInline = openInlines[i] as StyleToken;
+                    const openInline = openInlines[i];
                     if (token.type === openInline.type) {
                         openInline.active = true;
                         token.active = true;

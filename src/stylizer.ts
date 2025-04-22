@@ -41,7 +41,7 @@ export class Stylizer {
             return new Set([RunStyle.TitlePageKey]);
         }
 
-        return this.activeStyles;
+        return new Set(this.activeStyles);
     }
 
     process(token: StyleToken) {
@@ -54,14 +54,5 @@ export class Stylizer {
                 this.activeStyles.add(style);
             }
         }
-    }
-
-    isMultiline(token: StyleToken) {
-        return (
-            token.type === RunTokenType.BoneyardOpen ||
-            token.type === RunTokenType.BoneyardClose ||
-            token.type === RunTokenType.NoteOpen ||
-            token.type === RunTokenType.NoteClose
-        );
     }
 }

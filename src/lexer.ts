@@ -33,9 +33,7 @@ export class Lexer {
     isEscaped = false;
     nextChar = "";
 
-    openBoneyards: StyleToken[] = [];
-    openNotes: StyleToken[] = [];
-    openInlines: StyleToken[] = [];
+    multilineTokens: StyleToken[] = [];
     textBuffer = "";
     tokenizer = new Tokenizer();
 
@@ -47,13 +45,13 @@ export class Lexer {
 
         const lines = chunk.split("\n");
         const tokens = [];
-        this.openBoneyards = [];
-        this.openNotes = [];
-        this.openInlines = [];
+        this.multilineTokens = [];
 
         /* 
          * If there's a title page at the start of the document, we use a
-         * separate function to process that first.
+         * separate function to process that first. This lets us handle the
+         * title page efficiently and avoids a check for every line in the rest
+         * of the document.
          */
         if (this.isDocumentStart && Tokenizer.regexes.titlePageKey.test(lines[0])) {
             this.isDocumentStart = false;
@@ -71,6 +69,11 @@ export class Lexer {
             }
         }
 
+        /* 
+         * We lex the rest of the document starting after whatever we processed
+         * as the title page. After tokenizing each line, we update relevant
+         * flags in the lexer.
+         */
         for (let i = tokens.length; i < lines.length; i++) {
             if (i < lines.length - 1) {
                 const nextLine = lines[i + 1];
@@ -112,6 +115,14 @@ export class Lexer {
 
             // First, handle escape tokens or reset the escaped flag.
             this.isEscaped = (token.type === RunTokenType.Escape);
+
+            /*
+             * If we processed a multiline token (boneyard or note), we store
+             * it to make later parsing more efficient.
+             */
+            if (token.isMultilineStyle()) {
+                this.multilineTokens.push(token as StyleToken);
+            }
 
             // If the token is plain text, we start/continue building a text buffer.
             if (token.type === RunTokenType.Text) {
