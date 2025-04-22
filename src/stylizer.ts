@@ -18,7 +18,7 @@ export class Stylizer {
 
         if (token instanceof StyleToken) {
             const styles = new Set(this.activeStyles).add(RunStyle.Special);
-            this.process(token);
+            this.process(token, styles);
             if (token.active) {
                 return styles;
             }
@@ -44,12 +44,13 @@ export class Stylizer {
         return new Set(this.activeStyles);
     }
 
-    process(token: StyleToken) {
+    process(token: StyleToken, styles: Set<RunStyle>) {
         if (token.active) {
             const style = Stylizer.styleMap.get(token.type);
             if (style === undefined) return;
             if (this.activeStyles.has(style)) {
                 this.activeStyles.delete(style);
+                styles.delete(style);
             } else {
                 this.activeStyles.add(style);
             }
