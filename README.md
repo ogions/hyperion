@@ -50,8 +50,8 @@ Let's retire them.
 _Permanently_.
 ```
 
-```json
-blocks [
+```typescript
+blocks: [
     {
         type: Character,
         runs: [ { text: "DAN", styles: [] } ]
