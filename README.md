@@ -84,5 +84,7 @@ So that an editor can handle elements that extend outside of the input section, 
 
 Fairfax is available under the MIT license. If you want to build an editor using Fairfax, consider starting with [Monica](https://github.com/ogions/monica) instead, a minimal implementation which is also MIT-licensed.
 
+---
+
 Zach Lo
-[https://zachlo.com]
+https://zachlo.com
