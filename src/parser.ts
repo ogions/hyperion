@@ -54,7 +54,8 @@ export class Parser {
     isInDualDialogue = false;
     isInNote = false;
 
-    parse(chunk: string, context: ParserContext): Document {
+    parse(chunk: string, context?: ParserContext): Document {
+        if (!context) context = new ParserContext();
         const lexerContext = new LexerContext(
             context.isDocumentStart,
             context.isInDialogue,
