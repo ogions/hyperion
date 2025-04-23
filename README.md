@@ -87,4 +87,5 @@ Fairfax is available under the MIT license. If you want to build an editor using
 ---
 
 Zach Lo
+
 https://zachlo.com
