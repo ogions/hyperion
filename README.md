@@ -42,7 +42,7 @@ Fairfax returns a `Document` object, which contains a few other elements that de
 
 ### Blocks
 
-A `Block` has a type (like Action, Dialogue, or Transition) and some `Run`s. Each `Run` contains some raw text and a set of `RunStyle`s which define how the text should be displayed. See the following example.
+A `Block` has a type (like Action, Dialogue, or Transition) and some `Run`s. Each `Run` contains some raw text and a set of `RunStyle`s which define how the text should be displayed. See the following example of how a chunk of Fountain would be returned by Fairfax.
 
 ```
 DAN
@@ -51,7 +51,7 @@ _Permanently_.
 ```
 
 ```typescript
-blocks: [
+[
     {
         type: Character,
         runs: [ { text: "DAN", styles: [] } ]
@@ -71,3 +71,18 @@ blocks: [
     }
 ]
 ```
+
+### Multilines
+
+While Fountain is primarily a line-based language, it allows two kinds of multiline elements: boneyards and notes.
+
+So that an editor can handle elements that extend outside of the input section, Fairfax sends back some information about these elements.
+
+`MultilineStructure`s have a type, a start index, and an end index. `OpenMultilineStructure`s have a type, an index, and a boolean `forward` that marks whether the element opens forward or backward.
+
+## License
+
+Fairfax is available under the MIT license. If you want to build an editor using Fairfax, consider starting with [Monica](https://github.com/ogions/monica) instead, a minimal implementation which is also MIT-licensed.
+
+Zach Lo
+[https://zachlo.com]
