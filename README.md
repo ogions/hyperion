@@ -31,3 +31,11 @@ const context = new ParserContext(
 
 const fountainDocument = parser.parse(myPartialFountainString, context);
 ```
+
+## Documents
+
+Fairfax returns a `Document` object, which contains a few other elements that define a Fountain screenplay.
+
+* `Document.titlePage` is a `Map` object of key/value pairs from the screenplay's title page. Note that this isn't the actual text of the title page, which is still contained in the document blocks, but a set of already-paired values for easy reference.
+* `Document.blocks` is an array of `Block` objects (see [Blocks](#blocks) below) that represents the full parsed content of the input.
+* `Document.activeMultilines` and `Document.openMultilines` are collections of `MultilineStructures` (see [Multilines](#multilines) below). These allow an editor to handle multiline comments that might extend beyond the parsed section.
