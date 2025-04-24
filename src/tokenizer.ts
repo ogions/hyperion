@@ -323,6 +323,15 @@ export class Tokenizer {
          * pattern allows multiple values for the same key (multiple authors,
          * multiple address lines).
          */
+
+        // Blank line
+        if (!line) {
+            return new BlockToken(
+                BlockTokenType.BlankLine,
+                []
+            );
+        }
+
         if (Tokenizer.regexes.titlePageKey.test(line)) {
             const matches = Tokenizer.regexes.titlePageKey.exec(line);
             const key = matches ? matches[1] : "";
