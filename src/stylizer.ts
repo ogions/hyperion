@@ -39,6 +39,10 @@ export class Stylizer {
             return new Set([RunStyle.Special]);
         }
 
+        if (token.type === RunTokenType.SceneNumber) {
+            return new Set([RunStyle.SceneNumber]);
+        }
+
         if (token.type === RunTokenType.TitlePageKey) {
             return new Set([RunStyle.TitlePageKey]);
         }

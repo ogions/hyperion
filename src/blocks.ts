@@ -64,6 +64,7 @@ export enum RunStyle {
     Underline,
     Boneyard,
     Note,
+    SceneNumber,
     Special,
     TitlePageKey,
     TitlePageValue
