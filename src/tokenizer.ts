@@ -45,6 +45,28 @@ export class Tokenizer {
         }
 
         /*
+         * You can force an Action element can by preceding it with an
+         * exclamation point !.
+
+         * This is helpful when Action is in uppercase and directly followed by
+         * another line of Action, preventing the two from being interpreted a
+         * Character and Dialogue elements.
+         */
+        if (line.startsWith("!")) {
+            const tokens = [
+                new RunToken(
+                    RunTokenType.ActionForce,
+                    "!"
+                ),
+                ...lexer.lexLine(line.slice(1))
+            ];
+            return new BlockToken(
+                BlockTokenType.Action,
+                tokens
+            );
+        }
+
+        /*
          * You can force a Character element by preceding it with the “at” symbol @.
          *
          * The ability to force a Character element is helpful for names that require lower-case letters,
