@@ -218,15 +218,16 @@ export class Parser {
 
     parseTitlePageBlock(tokens: RunToken[], titlePage: Map<string, string>) {
         for (let token of tokens) {
-            const text = typeof token.content === "string" ? token.content : "";
             if (token.type === RunTokenType.TitlePageKey) {
+                const text = typeof token.content === "string" ? token.content : "";
                 if (this.openTitlePageKey && this.openTitlePageValue) {
                     titlePage.set(this.openTitlePageKey, this.openTitlePageValue.join("\n"));
                 }
                 this.openTitlePageKey = text;
                 this.openTitlePageValue = [];
             } else if (token.type === RunTokenType.TitlePageValue) {
-                const value = text;
+                if (typeof token.content !== "object") return;
+                const value = token.content.map((t) => t.content).join("");
                 this.openTitlePageValue.push(value);
             }
         }
