@@ -227,8 +227,8 @@ export class Parser {
                 this.openTitlePageValue = [];
             } else if (token.type === RunTokenType.TitlePageValue) {
                 if (typeof token.content !== "object") return;
-                const value = token.content.map((t) => t.content).join("");
-                this.openTitlePageValue.push(value);
+                const value = token.content.map((t) => t.content).join("").trim();
+                if (value) this.openTitlePageValue.push(value);
             }
         }
     }
