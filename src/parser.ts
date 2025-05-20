@@ -323,12 +323,15 @@ export class Parser {
          * Try reparsing any unmatched bold tokens as italic. Note that we only
          * try if there's also an unmatched italic token.
          */
-        let shouldTryReparse = false;
+        let hasUnmatchedItalic = false;
+        let hasUnmatchedBold = false;
         for (let token of openInlines) {
+            console.log("Checking token ", token.content);
             if (token.type === RunTokenType.Italic) {
-                shouldTryReparse = true;
+                hasUnmatchedItalic = true;
             }
             if (token.type === RunTokenType.Bold) {
+                hasUnmatchedBold = true;
                 tokens.splice(
                     tokens.indexOf(token),
                     1,
@@ -345,6 +348,6 @@ export class Parser {
                 );
             }
         }
-        if (shouldTryReparse) this.parseInlines(tokens);
+        if (hasUnmatchedItalic && hasUnmatchedBold) this.parseInlines(tokens);
     }
 }
