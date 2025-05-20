@@ -326,7 +326,6 @@ export class Parser {
         let hasUnmatchedItalic = false;
         let hasUnmatchedBold = false;
         for (let token of openInlines) {
-            console.log("Checking token ", token.content);
             if (token.type === RunTokenType.Italic) {
                 hasUnmatchedItalic = true;
             }
