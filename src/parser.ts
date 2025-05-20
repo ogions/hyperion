@@ -271,10 +271,14 @@ export class Parser {
         }
     }
 
-    parseInlines(tokens: RunToken[]) {
+    parseInlines(tokens: RunToken[], isReparse?: boolean) {
         const openInlines = [];
+        let previousToken;
         for (let token of tokens) {
-            if (!(token instanceof StyleToken)) continue;
+            if (!(token instanceof StyleToken)) {
+                previousToken = token;
+                continue;
+            }
             // Inline styles aren't allowed inside notes.
             if (token.active) {
                 if (token.type === RunTokenType.NoteOpen) this.isInNote = true;
@@ -284,24 +288,65 @@ export class Parser {
            
             /*
              * We look back for a matching token to activate. If we don't find
-             * one, we store it as open.
+             * one, we store it as open. Note that tokens directly adjacent to
+             * one another will not activate.
+             *
+             * After matching, we continue through the rest of the open inlines
+             * and remove any of the same type. This ensures that four of the
+             * same token can't become improperly nested.
              */
             if (
                 token.type === RunTokenType.Bold ||
                 token.type === RunTokenType.Italic ||
                 token.type === RunTokenType.Underline
             ) {
+                let hasMatched = false;
                 for (let i = openInlines.length - 1; i >= 0; i--) {
                     const openInline = openInlines[i];
                     if (token.type === openInline.type) {
-                        openInline.active = true;
-                        token.active = true;
-                        openInlines.splice(i, 1);
-                        break;
+                        if (hasMatched) {
+                            openInlines.splice(i, 1);
+                        } else if (openInline !== previousToken) {
+                            openInline.active = true;
+                            token.active = true;
+                            openInlines.splice(i, 1);
+                            hasMatched = true;
+                        }
                     }
                 }
                 if (!token.active) openInlines.push(token);
             }
+            previousToken = token;
+        }
+
+        /*
+         * Try reparsing any unmatched bold tokens as italic. We only care if
+         * there are also unmatched italic tokens. If there's a potential
+         * match, we parse the line again. Either way, we reparse a maximum of
+         * once.
+         */
+        if (isReparse) return;
+        let shouldTryReparse = false;
+        for (let token of openInlines) {
+            if (token.type === RunTokenType.Italic) {
+                shouldTryReparse = true;
+            }
+            if (token.type === RunTokenType.Bold) {
+                const tokenIndex = tokens.indexOf(token);
+                tokens.splice(tokenIndex, 1, 
+                    new StyleToken(
+                        RunTokenType.Italic,
+                        "*",
+                        false
+                    ),
+                    new StyleToken(
+                        RunTokenType.Italic,
+                        "*",
+                        false
+                    ),
+                );
+            }
+            if (shouldTryReparse) this.parseInlines(tokens, true);
         }
     }
 }
