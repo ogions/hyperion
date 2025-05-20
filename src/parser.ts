@@ -271,7 +271,7 @@ export class Parser {
         }
     }
 
-    parseInlines(tokens: RunToken[], isReparse?: boolean) {
+    parseInlines(tokens: RunToken[]) {
         const openInlines = [];
         let previousToken;
         for (let token of tokens) {
@@ -320,20 +320,18 @@ export class Parser {
         }
 
         /*
-         * Try reparsing any unmatched bold tokens as italic. We only care if
-         * there are also unmatched italic tokens. If there's a potential
-         * match, we parse the line again. Either way, we reparse a maximum of
-         * once.
+         * Try reparsing any unmatched bold tokens as italic. Note that we only
+         * try if there's also an unmatched italic token.
          */
-        if (isReparse) return;
         let shouldTryReparse = false;
         for (let token of openInlines) {
             if (token.type === RunTokenType.Italic) {
                 shouldTryReparse = true;
             }
             if (token.type === RunTokenType.Bold) {
-                const tokenIndex = tokens.indexOf(token);
-                tokens.splice(tokenIndex, 1, 
+                tokens.splice(
+                    tokens.indexOf(token),
+                    1,
                     new StyleToken(
                         RunTokenType.Italic,
                         "*",
@@ -346,7 +344,7 @@ export class Parser {
                     ),
                 );
             }
-            if (shouldTryReparse) this.parseInlines(tokens, true);
         }
+        if (shouldTryReparse) this.parseInlines(tokens);
     }
 }
