@@ -34,9 +34,9 @@ export class Stylizer {
             token.type === RunTokenType.LyricLeader ||
             token.type === RunTokenType.TransitionForce ||
             token.type === RunTokenType.SectionHeadingLeader ||
-            token.type === RunTokenType.SynopsisLeader) {
-
-            return new Set([RunStyle.Special]);
+            token.type === RunTokenType.SynopsisLeader
+        ) {
+            return new Set([RunStyle.Markup]);
         }
 
         if (token.type === RunTokenType.SceneNumber) {
@@ -62,7 +62,7 @@ export class Stylizer {
                  */
                 this.activeStyles.delete(style);
                 styles.delete(style);
-                styles.add(RunStyle.Special);
+                styles.add(RunStyle.Markup);
             } else {
                 /*
                  * Section headings and synopses don't allow inline styles
@@ -71,7 +71,7 @@ export class Stylizer {
                  */
                 if (!(this.isInlineStyle(style) && !allowInlineStyles)) {
                     this.activeStyles.add(style);
-                    styles.add(RunStyle.Special);
+                    styles.add(RunStyle.Markup);
                 }
             }
         }
