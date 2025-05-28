@@ -206,7 +206,7 @@ export class Parser {
                 if (!(
                     styles.has(RunStyle.Boneyard) ||
                     styles.has(RunStyle.Note) ||
-                    styles.has(RunStyle.Special)
+                    styles.has(RunStyle.Markup)
                 )) {
                     styles.add(RunStyle.TitlePageValue);
                 }
