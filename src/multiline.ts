@@ -100,12 +100,18 @@ export class MultilineManager {
         this.hasOpenTitlePage = true;
     }
 
+    /*
+     * We close the title page at an index one greater than the blank line that
+     * actually closes it. This keeps the title page responsive if anything
+     * moves backwards into that blank line. The only performance cost is a 
+     * reparse of the title page when editing the first non-title page line.
+     */
     closeTitlePage(index: number) {
         this.hasOpenTitlePage = false;
         this.activeMultilines.add(new MultilineStructure(
             MultilineType.TitlePage,
             0,
-            index
+            index + 1
         ));
     }
 
