@@ -7,6 +7,6 @@ export class FountainRegexes {
     sceneNumber = /#([^#]+)#\s*$/;
     sectionHeading = /^(#{1,6})/;
     titlePageKey = /^([^\s:][^:]*)(:\s*)(.*)$/;
-    titlePageIndentedValue = /^( {3}\s*|\t\s*)(.*)/;
+    titlePageIndentedValue = /^([ \u00A0]{3}\s*|\t\s*)(.*)/;
     transition = /^([^a-z]*TO:|FADE OUT.|CUT TO BLACK.|FADE TO BLACK.)$/;
 }
