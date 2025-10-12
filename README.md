@@ -82,7 +82,7 @@ So that an editor can handle elements that extend outside of the input section, 
 
 ## Compatibility
 
-Fairfax is compatible with the [official Fountain spec](https://fountain.io/syntax). Where the spec is ambiguous, behavior is based on the [official source code](https://github.com/nyousefi/Fountain), [Highland](https://quoteunquoteapps.com/highland-pro/), and [CommonMark](https://commonmark.org/). Broadly, Fairfax aims to be generous and interpret text as the user most likely intended.
+Fairfax conforms to the [official Fountain spec](https://fountain.io/syntax). Where the spec is ambiguous, behavior is based on the [official source code](https://github.com/nyousefi/Fountain), [Highland](https://quoteunquoteapps.com/highland-pro/), and [CommonMark](https://commonmark.org/). Broadly, Fairfax aims to be generous and interpret text as the user most likely intended.
 
 ## License
 
