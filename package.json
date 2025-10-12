@@ -1,6 +1,6 @@
 {
   "name": "fairfax",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A continuous, Typescript-based parser for the Fountain markup language.",
   "main": "src/fairfax.ts",
   "scripts": {
