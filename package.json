@@ -2,9 +2,22 @@
   "name": "fairfax",
   "version": "0.1.0",
   "description": "Continuous parser for Fountain screenplay markup language.",
-  "main": "src/fairfax.ts",
+  "type": "module",
+  "main": "dist/fairfax.js",
+  "types": "dist/fairfax.d.ts",
+  "exports": {
+      "." {
+          "import": "./dist/fairfax.js",
+          "types": "./dist/fairfax.d.ts"
+      }
+  },
+  "files": ["dist"],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "clean": "rm -rf dist",
+    "build:types": "tsc --emitDeclarationOnly --outDir dist",
+    "build:esbuild": "esbuild src/fairfax.ts --bundle --format=esm --outfile=dist/fairfax.js",
+    "build": "npm run clean && npm run build:types && npm run build:esbuild",
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
