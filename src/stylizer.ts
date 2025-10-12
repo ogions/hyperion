@@ -34,7 +34,8 @@ export class Stylizer {
             token.type === RunTokenType.LyricLeader ||
             token.type === RunTokenType.TransitionForce ||
             token.type === RunTokenType.SectionHeadingLeader ||
-            token.type === RunTokenType.SynopsisLeader
+            token.type === RunTokenType.SynopsisLeader ||
+            token.type === RunTokenType.Escape
         ) {
             return new Set([RunStyle.Markup]);
         }

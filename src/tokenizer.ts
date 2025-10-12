@@ -468,6 +468,12 @@ export class Tokenizer {
                 "_"
             );
         }
+        if (char === "\\") {
+            return new RunToken(
+                RunTokenType.Escape,
+                "\\"
+            );
+        }
 
         // Fall back on plain text
         return new RunToken(
