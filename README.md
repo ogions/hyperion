@@ -63,9 +63,9 @@ _Permanently_.
     {
         type: Dialogue,
         runs: [
-            { text: "_", styles: [Special] },
+            { text: "_", styles: [Markup] },
             { text: "Permanently", styles: [Underline] },
-            { text: "_", styles: [Special] },
+            { text: "_", styles: [Markup] },
             { text: ".", styles: [] }
         ]
     }
@@ -79,6 +79,10 @@ While Fountain is primarily a line-based language, it allows two kinds of multil
 So that an editor can handle elements that extend outside of the input section, Fairfax sends back some information about these elements.
 
 `MultilineStructure`s have a type, a start index, and an end index. `OpenMultilineStructure`s have a type, an index, and a boolean `forward` that marks whether the element opens forward or backward.
+
+## Compatibility
+
+Fairfax is compatible with the [official Fountain spec](https://fountain.io/syntax). Where the spec is ambiguous, behavior is based on the [official source code](https://github.com/nyousefi/Fountain), [Highland](https://quoteunquoteapps.com/highland-pro/), and [CommonMark](https://commonmark.org/). Broadly, Fairfax aims to be generous and interpret text as the user most likely intended.
 
 ## License
 
