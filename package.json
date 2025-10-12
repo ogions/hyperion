@@ -6,7 +6,7 @@
   "main": "dist/fairfax.js",
   "types": "dist/fairfax.d.ts",
   "exports": {
-      "." {
+      ".": {
           "import": "./dist/fairfax.js",
           "types": "./dist/fairfax.d.ts"
       }
