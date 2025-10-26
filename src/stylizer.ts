@@ -33,6 +33,8 @@ export class Stylizer {
             token.type === RunTokenType.DualDialogue ||
             token.type === RunTokenType.LyricLeader ||
             token.type === RunTokenType.TransitionForce ||
+            token.type === RunTokenType.CenterLeft ||
+            token.type === RunTokenType.CenterRight ||
             token.type === RunTokenType.SectionHeadingLeader ||
             token.type === RunTokenType.SynopsisLeader ||
             token.type === RunTokenType.Escape
