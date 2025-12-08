@@ -1,27 +1,27 @@
 {
-  "name": "fairfax",
+  "name": "hyperion",
   "version": "0.1.0",
   "description": "Continuous parser for Fountain screenplay markup language.",
   "type": "module",
-  "main": "dist/fairfax.js",
-  "types": "dist/fairfax.d.ts",
+  "main": "dist/hyperion.js",
+  "types": "dist/hyperion.d.ts",
   "exports": {
       ".": {
-          "import": "./dist/fairfax.js",
-          "types": "./dist/fairfax.d.ts"
+          "import": "./dist/hyperion.js",
+          "types": "./dist/hyperion.d.ts"
       }
   },
   "files": ["dist"],
   "scripts": {
     "clean": "rm -rf dist",
     "build:types": "tsc --emitDeclarationOnly --outDir dist",
-    "build:esbuild": "esbuild src/fairfax.ts --bundle --format=esm --outfile=dist/fairfax.js",
+    "build:esbuild": "esbuild src/hyperion.ts --bundle --format=esm --outfile=dist/hyperion.js",
     "build": "npm run clean && npm run build:types && npm run build:esbuild",
     "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ogions/fairfax"
+    "url": "https://github.com/ogions/hyperion"
   },
   "author": "Zach Lo",
   "license": "MIT",
