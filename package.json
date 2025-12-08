@@ -1,5 +1,5 @@
 {
-  "name": "hyperion",
+  "name": "@goldenrod-app/hyperion",
   "version": "0.1.0",
   "description": "Continuous parser for Fountain screenplay markup language.",
   "type": "module",
