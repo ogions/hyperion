@@ -16,7 +16,7 @@ export class Tokenizer {
          * Official Spec: https://fountain.io/syntax/
          * Github Repo: https://github.com/nyousefi/Fountain/
          */
-        
+
         // Blank line
         if (!line) {
             return new BlockToken(
@@ -334,7 +334,7 @@ export class Tokenizer {
         if (lexer.anticipateCharacter &&
             lexer.previousLineIsBlank &&
             Tokenizer.regexes.character.test(line)) {
-            
+
             return new BlockToken(
                 BlockTokenType.Action,
                 lexer.lexLine(line),

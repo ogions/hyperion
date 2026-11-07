@@ -47,7 +47,6 @@ export class Lexer {
         this.isInDialogue = context.isInDialogue;
         this.previousLineIsBlank = context.previousLineIsBlank;
         this.anticipateCharacter = context.anticipateCharacter;
-        console.log(this.anticipateCharacter);
 
         const lines = chunk.split("\n");
         const tokens = [];

@@ -1,5 +1,6 @@
 export class FountainRegexes {
     character = /^[^a-z()]*[A-Z]+[^a-z()]*(\(.*\))?$/;
+    couldBeCharacter = /^(?=.{2,})(?=.*[A-Z])[^a-z()]*(\(.*)?$/;
     pageBreak = /^={3,}$/;
     parenthetical = /^\s*\(.*\)\s*$/;
     sceneHeading = /^(int|ext|est|int\.?\/ext|i\.?\/e)[\. ].+/i;
