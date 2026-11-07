@@ -333,7 +333,7 @@ export class Tokenizer {
          */
         if (lexer.anticipateCharacter &&
             lexer.previousLineIsBlank &&
-            Tokenizer.regexes.character.test(line)) {
+            Tokenizer.regexes.couldBeCharacter.test(line)) {
 
             return new BlockToken(
                 BlockTokenType.Action,
