@@ -327,6 +327,22 @@ export class Tokenizer {
             );
         }
 
+        /*
+         * If this would normally be classified as action, but could be a
+         * character, mark it as such.
+         */
+        if (lexer.anticipateCharacter &&
+            lexer.previousLineIsBlank &&
+            Tokenizer.regexes.character.test(line)) {
+            
+            return new BlockToken(
+                BlockTokenType.Character,
+                lexer.lexLine(line),
+                false,
+                true
+            );
+        }
+            
         // Fall back on action
         return new BlockToken(
             BlockTokenType.Action,

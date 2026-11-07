@@ -10,6 +10,7 @@ export class ParserContext {
     isInDualDialogue: boolean;
     nextLineIsBlank: boolean;
     previousLineIsBlank: boolean;
+    anticipateCharacter: boolean;
 
     constructor(
         isDocumentStart?: boolean,
@@ -17,12 +18,14 @@ export class ParserContext {
         isInDualDialogue?: boolean,
         nextLineIsBlank?: boolean,
         previousLineIsBlank?: boolean,
+        anticipateCharacter?: boolean,
     ) {
         this.isDocumentStart = isDocumentStart ?? false;
         this.isInDialogue = isInDialogue ?? false;
         this.isInDualDialogue = isInDualDialogue ?? false;
         this.nextLineIsBlank = nextLineIsBlank ?? true;
         this.previousLineIsBlank = previousLineIsBlank ?? true;
+        this.anticipateCharacter = anticipateCharacter ?? false;
     }
 }
 
@@ -60,7 +63,8 @@ export class Parser {
             context.isDocumentStart,
             context.isInDialogue,
             context.nextLineIsBlank,
-            context.previousLineIsBlank
+            context.previousLineIsBlank,
+            context.anticipateCharacter
         );
         this.isInDualDialogue = context.isInDualDialogue;
 
@@ -130,7 +134,8 @@ export class Parser {
                 blockType,
                 runs,
                 token.centered,
-                this.isInDualDialogue
+                this.isInDualDialogue,
+                token.couldBeChar
             ));
         }
 

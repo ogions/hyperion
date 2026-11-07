@@ -7,17 +7,20 @@ export class LexerContext {
     isInDialogue: boolean;
     nextLineIsBlank: boolean;
     previousLineIsBlank: boolean;
+    anticipateCharacter: boolean;
 
     constructor(
         isDocumentStart: boolean,
         isInDialogue: boolean,
         nextLineIsBlank: boolean,
-        previousLineIsBlank: boolean
+        previousLineIsBlank: boolean,
+        anticipateCharacter: boolean
     ) {
         this.isDocumentStart = isDocumentStart;
         this.isInDialogue = isInDialogue;
         this.nextLineIsBlank = nextLineIsBlank;
         this.previousLineIsBlank = previousLineIsBlank;
+        this.anticipateCharacter = anticipateCharacter;
     }
 }
 
@@ -28,6 +31,7 @@ export class Lexer {
     isInDialogue = false;
     nextLineIsBlank = true;
     previousLineIsBlank = true;
+    anticipateCharacter = false;
 
     // Inline flags
     isEscaped = false;
@@ -42,6 +46,8 @@ export class Lexer {
         this.isDocumentStart = context.isDocumentStart;
         this.isInDialogue = context.isInDialogue;
         this.previousLineIsBlank = context.previousLineIsBlank;
+        this.anticipateCharacter = context.anticipateCharacter;
+        console.log(this.anticipateCharacter);
 
         const lines = chunk.split("\n");
         const tokens = [];

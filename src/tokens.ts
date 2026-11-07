@@ -2,15 +2,18 @@ export class BlockToken {
     type: BlockTokenType;
     content: RunToken[];
     centered?: boolean;
+    couldBeChar?: boolean;
 
     constructor(
         type: BlockTokenType,
         content: RunToken[],
-        centered?: boolean
+        centered?: boolean,
+        couldBeChar?: boolean
     ) {
         this.type = type;
         this.content = content;
         if (centered) this.centered = centered;
+        if (couldBeChar) this.couldBeChar = couldBeChar;
     }
 
     allowsInlineStyles(): boolean {

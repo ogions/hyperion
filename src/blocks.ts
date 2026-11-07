@@ -24,12 +24,14 @@ export class Block {
     runs: Run[];
     centered?: boolean;
     isDual?: boolean;
+    couldBeChar?: boolean;
 
-    constructor(type: BlockType, runs: Run[], centered?: boolean, isDual?: boolean) {
+    constructor(type: BlockType, runs: Run[], centered?: boolean, isDual?: boolean, couldBeChar?: boolean) {
         this.type = type;
         this.runs = runs;
         if (centered) this.centered = centered;
         if (isDual) this.isDual = isDual;
+        if (couldBeChar) this.isDual = isDual;
     }
 }
 
