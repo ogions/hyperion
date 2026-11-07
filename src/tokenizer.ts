@@ -336,7 +336,7 @@ export class Tokenizer {
             Tokenizer.regexes.character.test(line)) {
             
             return new BlockToken(
-                BlockTokenType.Character,
+                BlockTokenType.Action,
                 lexer.lexLine(line),
                 false,
                 true
