@@ -31,7 +31,7 @@ export class Block {
         this.runs = runs;
         if (centered) this.centered = centered;
         if (isDual) this.isDual = isDual;
-        if (couldBeChar) this.isDual = isDual;
+        if (couldBeChar) this.couldBeChar = couldBeChar;
     }
 }
 
