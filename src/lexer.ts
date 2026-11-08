@@ -156,6 +156,8 @@ export class Lexer {
             ));
             this.textBuffer = "";
         }
+        // Reset escape flag.
+        this.isEscaped = false;
         return tokens;
     }
 }
