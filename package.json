@@ -1,17 +1,19 @@
 {
   "name": "@goldenrod-app/hyperion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Continuous parser for Fountain screenplay markup language.",
   "type": "module",
   "main": "dist/hyperion.js",
   "types": "dist/hyperion.d.ts",
   "exports": {
-      ".": {
-          "import": "./dist/hyperion.js",
-          "types": "./dist/hyperion.d.ts"
-      }
+    ".": {
+      "import": "./dist/hyperion.js",
+      "types": "./dist/hyperion.d.ts"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "clean": "rm -rf dist",
     "build:types": "tsc --emitDeclarationOnly --outDir dist",
