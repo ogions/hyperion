@@ -1,28 +1,6 @@
+import { ParserContext, ParserOptions } from "./parser";
 import { BlockToken, BlockTokenType, RunToken, RunTokenType, StyleToken } from "./tokens";
 import { Tokenizer } from "./tokenizer";
-
-export class LexerContext {
-
-    isDocumentStart: boolean;
-    isInDialogue: boolean;
-    nextLineIsBlank: boolean;
-    previousLineIsBlank: boolean;
-    anticipateCharacter: boolean;
-
-    constructor(
-        isDocumentStart: boolean,
-        isInDialogue: boolean,
-        nextLineIsBlank: boolean,
-        previousLineIsBlank: boolean,
-        anticipateCharacter: boolean
-    ) {
-        this.isDocumentStart = isDocumentStart;
-        this.isInDialogue = isInDialogue;
-        this.nextLineIsBlank = nextLineIsBlank;
-        this.previousLineIsBlank = previousLineIsBlank;
-        this.anticipateCharacter = anticipateCharacter;
-    }
-}
 
 export class Lexer {
 
@@ -41,12 +19,12 @@ export class Lexer {
     multilineTokens: StyleToken[] = [];
     textBuffer = "";
 
-    lex(chunk: string, context: LexerContext): BlockToken[] {
+    lex(chunk: string, context: ParserContext, options: ParserOptions): BlockToken[] {
 
         this.isDocumentStart = context.isDocumentStart;
         this.isInDialogue = context.isInDialogue;
         this.previousLineIsBlank = context.previousLineIsBlank;
-        this.anticipateCharacter = context.anticipateCharacter;
+        this.anticipateCharacter = options.anticipateCharacter;
 
         const lines = chunk.split("\n");
         const tokens = [];

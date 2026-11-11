@@ -1,8 +1,16 @@
 import { Block, BlockType, Document, Run, RunStyle } from "./blocks";
-import { Lexer, LexerContext } from "./lexer";
+import { Lexer } from "./lexer";
 import { MultilineManager } from "./multiline";
 import { Stylizer } from "./stylizer";
 import { BlockToken, BlockTokenType, RunToken, RunTokenType, StyleToken } from "./tokens";
+
+export class ParserOptions {
+    anticipateCharacter: boolean;
+
+    constructor(options: Partial<ParserOptions> = {}) {
+        this.anticipateCharacter = options.anticipateCharacter ?? false;
+    }
+}
 
 export class ParserContext {
     isDocumentStart: boolean;
@@ -10,28 +18,19 @@ export class ParserContext {
     isInDualDialogue: boolean;
     nextLineIsBlank: boolean;
     previousLineIsBlank: boolean;
-    anticipateCharacter: boolean;
 
-    constructor(
-        isDocumentStart?: boolean,
-        isInDialogue?: boolean,
-        isInDualDialogue?: boolean,
-        nextLineIsBlank?: boolean,
-        previousLineIsBlank?: boolean,
-        anticipateCharacter?: boolean,
-    ) {
-        this.isDocumentStart = isDocumentStart ?? false;
-        this.isInDialogue = isInDialogue ?? false;
-        this.isInDualDialogue = isInDualDialogue ?? false;
-        this.nextLineIsBlank = nextLineIsBlank ?? true;
-        this.previousLineIsBlank = previousLineIsBlank ?? true;
-        this.anticipateCharacter = anticipateCharacter ?? false;
+    constructor(context: Partial<ParserContext> = {}) {
+        this.isDocumentStart = context.isDocumentStart ?? false;
+        this.isInDialogue = context.isInDialogue ?? false;
+        this.isInDualDialogue = context.isInDualDialogue ?? false;
+        this.nextLineIsBlank = context.nextLineIsBlank ?? true;
+        this.previousLineIsBlank = context.previousLineIsBlank ?? true;
     }
 }
 
 export class Parser {
 
-    static typeMap = new Map([
+    private static readonly typeMap = new Map([
         [BlockTokenType.BlankLine, BlockType.BlankLine],
         [BlockTokenType.SceneHeading, BlockType.SceneHeading],
         [BlockTokenType.Action, BlockType.Action],
@@ -48,6 +47,7 @@ export class Parser {
 
     lexer = new Lexer();
     mlManager = new MultilineManager();
+    options: ParserOptions;
     stylizer = new Stylizer();
 
     activeStyles = new Set();
@@ -57,18 +57,15 @@ export class Parser {
     isInDualDialogue = false;
     isInNote = false;
 
-    parse(chunk: string, context?: ParserContext): Document {
-        if (!context) context = new ParserContext();
-        const lexerContext = new LexerContext(
-            context.isDocumentStart,
-            context.isInDialogue,
-            context.nextLineIsBlank,
-            context.previousLineIsBlank,
-            context.anticipateCharacter
-        );
-        this.isInDualDialogue = context.isInDualDialogue;
+    constructor(options: Partial<ParserOptions> = {}) {
+        this.options = new ParserOptions(options);
+    }
 
-        const tokens = this.lexer.lex(chunk, lexerContext);
+    parse(chunk: string, context: Partial<ParserContext> = {}): Document {
+        const parserContext = new ParserContext(context);
+        this.isInDualDialogue = parserContext.isInDualDialogue;
+
+        const tokens = this.lexer.lex(chunk, parserContext, this.options);
 
         const titlePage = new Map();
         const blocks = [];
