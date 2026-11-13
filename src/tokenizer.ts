@@ -73,13 +73,28 @@ export class Tokenizer {
          * and for non-Roman languages.
          */
         if (line.startsWith("@")) {
-            const tokens = [
-                new RunToken(
-                    RunTokenType.CharacterForce,
-                    "@"
-                ),
-                ...lexer.lexLine(line.slice(1))
-            ];
+
+            // Check for dual dialogue. More detailed explanation below.
+            const tokens = (line.endsWith("^")) ?
+                [
+                    new RunToken(
+                        RunTokenType.CharacterForce,
+                        "@"
+                    ),
+                    ...lexer.lexLine(line.slice(1, -1)),
+                    new RunToken(
+                        RunTokenType.DualDialogue,
+                        "^"
+                    )
+                ] :
+                [
+                    new RunToken(
+                        RunTokenType.CharacterForce,
+                        "@"
+                    ),
+                    ...lexer.lexLine(line.slice(1))
+                ];
+
             return new BlockToken(
                 BlockTokenType.Character,
                 tokens
