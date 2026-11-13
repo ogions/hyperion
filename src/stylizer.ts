@@ -87,4 +87,8 @@ export class Stylizer {
             style === RunStyle.Underline
         );
     }
+
+    stylesMatch(a: Set<RunStyle>, b: Set<RunStyle>): boolean {
+        return a.isSupersetOf(b) && b.isSupersetOf(a);
+    }
 }
