@@ -45,9 +45,10 @@ export class Parser {
         [BlockTokenType.TitlePage, BlockType.TitlePage]
     ]);
 
+    options: ParserOptions;
+
     lexer = new Lexer();
     mlManager = new MultilineManager();
-    options: ParserOptions;
     stylizer = new Stylizer();
 
     activeStyles = new Set();
@@ -180,7 +181,14 @@ export class Parser {
                 // Stylize the token and store it as a run.
                 const text = token.content;
                 const styles = this.stylizer.stylize(token, blockToken.allowsInlineStyles());
-                runs.push(new Run(text, styles));
+
+                // If the preceding run has matching styles, collapse them together.
+                const lastRun = runs[runs.length - 1];
+                if (lastRun && this.stylizer.stylesMatch(lastRun.styles, styles)) {
+                    lastRun.text += text;
+                } else {
+                    runs.push(new Run(text, styles));
+                }
             }
         } else {
             /*
